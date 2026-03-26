@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: forbook-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: forbook
+      POSTGRES_PASSWORD: forbook123
+      POSTGRES_DB: forbook
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

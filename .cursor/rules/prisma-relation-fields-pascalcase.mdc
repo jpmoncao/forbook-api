@@ -1,0 +1,35 @@
+---
+description: Campos de relação no schema Prisma em PascalCase (primeira letra maiúscula)
+globs: "**/*.prisma"
+alwaysApply: false
+---
+
+# Prisma — nomes de campos de relação
+
+Campos que declaram relações (`@relation` ou tipos de outro `model`, inclusive listas) **devem começar com letra maiúscula** e seguir **PascalCase** (mesmo padrão do nome do `model`).
+
+Isso vale para o nome do campo no lado da relação, por exemplo o array de filhos ou a referência ao registro pai.
+
+```prisma
+// ❌ Evitar
+model User {
+  userBooks UserBook[]
+}
+
+model CatalogBook {
+  userBooks UserBook[]
+}
+
+// ✅ Preferir
+model User {
+  UserBooks UserBook[]
+}
+
+model CatalogBook {
+  UserBooks UserBook[]
+}
+```
+
+**Observação:** campos escalares (`userId`, `email`, `createdAt`) não são “campos de relação” neste sentido; a convenção acima é só para os **nomes dos campos cujo tipo é outro model** (ou array disso).
+
+Ao criar ou renomear relações, alinhar com nomes já usados no projeto (`User`, `CatalogBook`, `UserBooks`, etc.).

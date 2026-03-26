@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Image {
+  id        String   @id @default(uuid())
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userBookId String?
+  UserBook   UserBook? @relation("UserBookGalleryImages", fields: [userBookId], references: [id], onDelete: Cascade)
+
+  MainForUserBook UserBook? @relation("UserBookMainImage")
+
+  @@map("images")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String
+  phoneNumber String
+  cpf         String   @unique
+  birthDate   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  UserBooks   UserBook[]
+  Address     Address[]    @relation("UserAddress")
+  Ratings     Rating[]     @relation("UserRatedBy")
+  RatedTo     Rating[]     @relation("UserRatedTo")
+  Wishlist    Wishlist?
+  Orders      Order[]
+  TradeOffers TradeOffer[]
+
+  @@map("users")
+}
+
+model UserBook {
+  id          String            @id @default(uuid())
+  condition   UserBookCondition
+  price       Float
+  description String
+  status      UserBookStatus
+  isPrivate   Boolean           @default(false)
+
+  mainImageId String   @unique
+  userId      String
+  bookId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  User          User        @relation(fields: [userId], references: [id])
+  CatalogBook   CatalogBook @relation(fields: [bookId], references: [id])
+  MainImage     Image       @relation("UserBookMainImage", fields: [mainImageId], references: [id])
+  GalleryImages Image[]     @relation("UserBookGalleryImages")
+  Order         Order?      @relation("OrderUserBook")
+
+  offeredInTradeOfferId String?
+  OfferedInTradeOffer   TradeOffer?  @relation("TradeOfferSend", fields: [offeredInTradeOfferId], references: [id], onDelete: SetNull)
+  WantedByTradeOffers   TradeOffer[] @relation("TradeOfferWants")
+
+  @@map("user_books")
+}
+
+enum UserBookCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  ACCEPTABLE
+  POOR
+}
+
+enum UserBookStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model CatalogBook {
+  id          String @id @default(uuid())
+  isbn        String @unique
+  title       String
+  author      String
+  publisher   String
+  year        Int
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  UserBooks UserBook[]
+  Wishlists Wishlist[] @relation("WishlistCatalogBooks")
+
+  @@map("catalog_books")
+}
+
+model Address {
+  id           String @id @default(uuid())
+  street       String
+  number       String
+  complement   String
+  neighborhood String
+  city         String
+  state        String
+  zipCode      String
+  userId       String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User User @relation("UserAddress", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+model Rating {
+  id        String @id @default(uuid())
+  value     Int
+  comment   String
+  ratedById String
+  ratedToId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  RatedBy User @relation("UserRatedBy", fields: [ratedById], references: [id], onDelete: Cascade)
+  RatedTo User @relation("UserRatedTo", fields: [ratedToId], references: [id], onDelete: Cascade)
+
+  @@map("ratings")
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  CatalogBooks CatalogBook[] @relation("WishlistCatalogBooks")
+
+  @@map("wishlists")
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  status     OrderStatus
+  userId     String
+  userBookId String      @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  UserBook UserBook @relation("OrderUserBook", fields: [userBookId], references: [id], onDelete: Cascade)
+  Payment  Payment?
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model Payment {
+  id       String @id @default(uuid())
+  amount   Float
+  discount Float?
+  orderId  String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  Delivery Delivery?
+
+  @@map("payments")
+}
+
+model Delivery {
+  id        String         @id @default(uuid())
+  status    DeliveryStatus @default(PENDING)
+  paymentId String         @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@map("deliveries")
+}
+
+enum DeliveryStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model TradeOffer {
+  id               String           @id @default(uuid())
+  status           TradeOfferStatus @default(PENDING)
+  userId           String
+  wantedUserBookId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  WantedUserBook   UserBook   @relation("TradeOfferWants", fields: [wantedUserBookId], references: [id], onDelete: Cascade)
+  OfferedUserBooks UserBook[] @relation("TradeOfferSend")
+
+  @@map("trade_offers")
+}
+
+enum TradeOfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
