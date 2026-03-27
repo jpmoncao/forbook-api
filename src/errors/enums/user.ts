@@ -1,0 +1,15 @@
+export enum EUserException {
+    USER_NOT_FOUND = "Usuário não encontrado",
+    USER_ALREADY_EXISTS = "Usuário já existe",
+    USER_EMAIL_ALREADY_EXISTS = "Email do usuário já existe",
+    USER_CPF_ALREADY_EXISTS = "CPF do usuário já existe",
+    USER_PHONE_NUMBER_ALREADY_EXISTS = "Número de telefone do usuário já existe",
+    USER_INVALID_CREDENTIALS = "Credenciais do usuário inválidas",
+    USER_INVALID_TOKEN = "Token do usuário inválido",
+    USER_INVALID_REFRESH_TOKEN = "Refresh token do usuário inválido",
+    USER_INVALID_PASSWORD = "Senha do usuário inválida",
+    USER_INVALID_EMAIL = "Email do usuário inválido",
+    USER_INVALID_NAME = "Nome do usuário inválido",
+    USER_INVALID_PHONE_NUMBER = "Número de telefone do usuário inválido",
+    USER_INVALID_CPF = "CPF do usuário inválido",
+}
