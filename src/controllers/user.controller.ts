@@ -23,6 +23,8 @@ export default class UserController {
                 data: user
             });
         } catch (error) {
+            console.error(error);
+
             if (error instanceof CustomError) {
                 res.status(error.statusCode).json({ message: error.message });
                 return;

@@ -1,10 +1,11 @@
 import { IUserCreateDTO } from "@/interfaces/user";
 import { UserCreateInput } from "@/generated/prisma/models"
 import UserRepository from "@/repositories/user.repository";
+import Hash from "@/utils/hash";
 import { EUserException } from "@/errors/enums/user";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
-import { User } from "@/generated/prisma/client";
+import { UserPublic } from "@/types/User";
 
 export default class UserService {
     private readonly repository: UserRepository;
@@ -13,7 +14,7 @@ export default class UserService {
         this.repository = new UserRepository();
     }
 
-    createUser = async (userCreateDTO: IUserCreateDTO): Promise<User> => {
+    createUser = async (userCreateDTO: IUserCreateDTO): Promise<UserPublic> => {
         const existingUserEmail = await this.repository.findByEmail(userCreateDTO.email);
         if (existingUserEmail) {
             throw new CustomError(EUserException.USER_EMAIL_ALREADY_EXISTS, EStatusCode.CONFLICT);
@@ -29,9 +30,11 @@ export default class UserService {
             throw new CustomError(EUserException.USER_PHONE_NUMBER_ALREADY_EXISTS, EStatusCode.CONFLICT);
         }
 
+        const password = await Hash.hash(userCreateDTO.password + (process.env.PEPPER_SECRET ?? ""));
+
         const userCreateInput: UserCreateInput = {
             email: userCreateDTO.email,
-            password: userCreateDTO.password,
+            password,
             name: userCreateDTO.name,
             phoneNumber: userCreateDTO.phoneNumber,
             cpf: userCreateDTO.cpf,
@@ -49,7 +52,7 @@ export default class UserService {
             }
         }
 
-        const user = await this.repository.create(userCreateInput);
+        const user = await this.repository.create(userCreateInput) as UserPublic;
         return user;
     }
 }

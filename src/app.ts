@@ -5,6 +5,7 @@ import cors from "cors";
 
 import { connectPrisma, disconnectPrisma } from "@/config/prisma";
 import userRouter from "@/routers/user.router";
+import authRouter from "@/routers/auth.router";
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.get("/health", (_, res: Response) => {
 });
 
 app.use("/users", userRouter);
+app.use("/auth", authRouter);
 
 const PORT = 3002;
 

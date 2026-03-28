@@ -15,7 +15,9 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.5.0",
+    "@types/nodemailer": "^6.4.23",
     "prisma": "^7.5.0",
     "tsc": "^2.0.4",
     "tsx": "^4.21.0"
@@ -23,8 +25,13 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
+    "@sendgrid/mail": "^8.1.6",
+    "argon2": "^0.44.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mailtrap": "^4.5.1",
+    "nodemailer": "^7.0.13"
   }
 }

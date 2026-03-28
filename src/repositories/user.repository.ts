@@ -10,6 +10,13 @@ export default class UserRepository {
         return user;
     }
 
+    findById = async (id: string): Promise<User | null> => {
+        const user = await prisma.user.findUnique({
+            where: { id },
+        });
+        return user;
+    }
+
     findByEmail = async (email: string): Promise<User | null> => {
         const user = await prisma.user.findUnique({
             where: { email },

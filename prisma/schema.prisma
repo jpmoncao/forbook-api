@@ -33,15 +33,30 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  UserBooks   UserBook[]
-  Address     Address[]    @relation("UserAddress")
-  Ratings     Rating[]     @relation("UserRatedBy")
-  RatedTo     Rating[]     @relation("UserRatedTo")
-  Wishlist    Wishlist?
-  Orders      Order[]
-  TradeOffers TradeOffer[]
+  UserBooks     UserBook[]
+  Address       Address[]      @relation("UserAddress")
+  Ratings       Rating[]       @relation("UserRatedBy")
+  RatedTo       Rating[]       @relation("UserRatedTo")
+  Wishlist      Wishlist?
+  Orders        Order[]
+  TradeOffers   TradeOffer[]
+  LoginAttempts LoginAttempt[] @relation("UserLoginAttempts")
 
   @@map("users")
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid())
+  userId    String
+  success   Boolean  @default(false)
+  code      String   @db.VarChar(6)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User User @relation("UserLoginAttempts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_attempts")
 }
 
 model UserBook {
