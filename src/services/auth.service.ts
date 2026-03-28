@@ -8,6 +8,7 @@ import { LoginAttemptCreateInput } from "@/generated/prisma/models";
 import MailService from "@/services/mail.service";
 import { ELoginAttemptException } from "@/errors/enums/loginAttempt";
 import Jwt from "@/utils/jwt";
+import { ConfirmLoginBody, LoginBody } from "@/schemas/auth.schema";
 
 export default class AuthService {
     static readonly EXPIRATION_TIME = 1000 * 60 * 10; // 10 minutes
@@ -22,13 +23,13 @@ export default class AuthService {
         this.mailService = new MailService();
     }
 
-    login = async (email: string, password: string): Promise<void> => {
-        const user = await this.userRepository.findByEmail(email);
+    login = async (body: LoginBody): Promise<void> => {
+        const user = await this.userRepository.findByEmail(body.email);
         if (!user) {
             throw new CustomError(EUserException.USER_NOT_FOUND, EStatusCode.NOT_FOUND);
         }
 
-        const isPasswordValid = await Hash.compare(password + (process.env.PEPPER_SECRET ?? ""), user.password);
+        const isPasswordValid = await Hash.compare(body.password + (process.env.PEPPER_SECRET ?? ""), user.password);
         if (!isPasswordValid) {
             throw new CustomError(EUserException.USER_INVALID_PASSWORD, EStatusCode.UNAUTHORIZED);
         }
@@ -48,15 +49,18 @@ export default class AuthService {
             },
         };
 
-        await this.loginAttemptRepository.create(loginAttemptCreateInput);
+        const loginAttempt = await this.loginAttemptRepository.create(loginAttemptCreateInput);
+        if (!loginAttempt) {
+            throw new CustomError(ELoginAttemptException.LOGIN_ATTEMPT_CREATION_FAILED, EStatusCode.INTERNAL_SERVER_ERROR);
+        }
 
         await this.mailService.sendLoginCode(user.email, code);
 
         return;
     }
 
-    confirmLogin = async (email: string, code: string): Promise<{ accessToken: string, refreshToken: string }> => {
-        const loginAttempt = await this.loginAttemptRepository.findByCode(code);
+    confirmLogin = async (body: ConfirmLoginBody): Promise<{ accessToken: string, refreshToken: string }> => {
+        const loginAttempt = await this.loginAttemptRepository.findByCode(body.code);
         if (!loginAttempt) {
             throw new CustomError(ELoginAttemptException.LOGIN_ATTEMPT_NOT_FOUND, EStatusCode.NOT_FOUND);
         }
@@ -70,7 +74,7 @@ export default class AuthService {
         }
 
         const user = await this.userRepository.findById(loginAttempt.userId);
-        if (!user || user.email !== email) {
+        if (!user || user.email !== body.email) {
             throw new CustomError(ELoginAttemptException.LOGIN_ATTEMPT_INVALID_USER, EStatusCode.UNAUTHORIZED);
         }
 

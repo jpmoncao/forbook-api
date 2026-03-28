@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { IUserCreateDTO } from "@/interfaces/user";
 import UserService from "../services/user.service";
+import type { UserCreateBody } from "@/schemas/user.schema";
 import { CustomError } from "../errors/custom-error";
 import { EStatusCode } from "../errors/enums/status-code";
 import { EGenericException } from "../errors/enums/generic";
@@ -14,7 +14,7 @@ export default class UserController {
 
     createUser = async (req: Request, res: Response) => {
         try {
-            const userCreateDTO = req.body as IUserCreateDTO;
+            const userCreateDTO = req.body as UserCreateBody;
 
             const user = await this.service.createUser(userCreateDTO);
 

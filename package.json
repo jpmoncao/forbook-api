@@ -32,6 +32,7 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mailtrap": "^4.5.1",
-    "nodemailer": "^7.0.13"
+    "nodemailer": "^7.0.13",
+    "zod": "^4.3.6"
   }
 }

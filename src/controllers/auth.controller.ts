@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { IConfirmLoginDTO, ILoginDTO } from "@/interfaces/auth";
 import AuthService from "@/services/auth.service";
+import type { ConfirmLoginBody, LoginBody } from "@/schemas/auth.schema";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
 import { EGenericException } from "@/errors/enums/generic";
@@ -14,9 +14,9 @@ export default class AuthController {
 
     login = async (req: Request, res: Response) => {
         try {
-            const { email, password } = req.body as ILoginDTO;
+            const { email, password } = req.body as LoginBody;
 
-            await this.service.login(email, password);
+            await this.service.login({ email, password });
 
             res.status(200).json({
                 message: "Código verificado enviado com sucesso",
@@ -35,9 +35,9 @@ export default class AuthController {
 
     confirmLogin = async (req: Request, res: Response) => {
         try {
-            const { email, code } = req.body as IConfirmLoginDTO;
+            const { email, code } = req.body as ConfirmLoginBody;
 
-            const tokens = await this.service.confirmLogin(email, code);
+            const tokens = await this.service.confirmLogin({ email, code });
 
             res.status(200).json({
                 message: "Login confirmado com sucesso",

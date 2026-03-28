@@ -18,14 +18,14 @@ export default class UserRepository {
     }
 
     findByEmail = async (email: string): Promise<User | null> => {
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
             where: { email },
         });
         return user;
     }
 
     findByCpf = async (cpf: string): Promise<User | null> => {
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
             where: { cpf },
         });
         return user;
