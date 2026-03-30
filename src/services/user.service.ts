@@ -55,4 +55,14 @@ export default class UserService {
         const user = await this.repository.create(userCreateInput) as UserPublic;
         return user;
     }
+
+    getMe = async (userId: string): Promise<UserPublic> => {
+        const user = await this.repository.findById(userId);
+        if (!user) {
+            throw new CustomError(EUserException.USER_NOT_FOUND, EStatusCode.NOT_FOUND);
+        }
+
+        const { password: _, ...publicUser } = user;
+        return publicUser as UserPublic;
+    }
 }

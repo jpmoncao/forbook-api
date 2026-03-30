@@ -1,5 +1,6 @@
 export enum EUserException {
     USER_NOT_FOUND = "Usuário não encontrado",
+    USER_UNAUTHORIZED = "Usuário não autorizado",
     USER_ALREADY_EXISTS = "Usuário já existe",
     USER_EMAIL_ALREADY_EXISTS = "Email do usuário já existe",
     USER_CPF_ALREADY_EXISTS = "CPF do usuário já existe",
