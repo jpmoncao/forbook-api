@@ -1,3 +1,4 @@
+import { loginConfirmationEmailHtml } from "@/public/emails/login-confirmation";
 import sgMail from "@sendgrid/mail";
 import { MailtrapClient } from "mailtrap";
 
@@ -72,12 +73,12 @@ export default class MailService {
         });
     };
 
-    sendLoginCode = async (to: string, code: string): Promise<void> => {
+    sendLoginCode = async (to: string, name: string, code: string): Promise<void> => {
         await this.sendMail({
             to,
             subject: "Código de verificação — Forbook",
             text: `Seu código é: ${code}. Ele expira em 10 minutos.`,
-            html: `<p>Seu código é: <strong>${code}</strong></p><p>Ele expira em 10 minutos.</p>`,
+            html: loginConfirmationEmailHtml(name, code),
         });
     };
 }

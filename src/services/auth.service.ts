@@ -54,7 +54,7 @@ export default class AuthService {
             throw new CustomError(ELoginAttemptException.LOGIN_ATTEMPT_CREATION_FAILED, EStatusCode.INTERNAL_SERVER_ERROR);
         }
 
-        await this.mailService.sendLoginCode(user.email, code);
+        await this.mailService.sendLoginCode(user.email, user.name.split(" ")[0], code);
 
         return;
     }
