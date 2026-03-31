@@ -16,24 +16,27 @@ model Image {
   userBookId String?
   UserBook   UserBook? @relation("UserBookGalleryImages", fields: [userBookId], references: [id], onDelete: Cascade)
 
-  MainForUserBook UserBook? @relation("UserBookMainImage")
+  MainForUserBook  UserBook? @relation("UserBookMainImage")
+  UserProfileImage User?     @relation("UserProfileImage")
 
   @@map("images")
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  password    String
-  name        String
-  phoneNumber String
-  cpf         String   @unique
-  birthDate   DateTime
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String
+  name           String
+  phoneNumber    String
+  cpf            String   @unique
+  birthDate      DateTime
+  profileImageId String?  @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   UserBooks     UserBook[]
+  ProfileImage  Image?         @relation("UserProfileImage", fields: [profileImageId], references: [id])
   Address       Address[]      @relation("UserAddress")
   Ratings       Rating[]       @relation("UserRatedBy")
   RatedTo       Rating[]       @relation("UserRatedTo")

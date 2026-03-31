@@ -1,6 +1,7 @@
 import prisma from "@/config/prisma";
 import { User } from "@/generated/prisma/client";
-import { UserCreateInput } from "@/generated/prisma/models";
+import { UserCreateInput, UserInclude, UserUpdateInput } from "@/generated/prisma/models";
+import type { UserWithInclude } from "@/types/User";
 
 export default class UserRepository {
     create = async (userCreateInput: UserCreateInput): Promise<User> => {
@@ -10,9 +11,30 @@ export default class UserRepository {
         return user;
     }
 
+    update = async (id: string, userUpdateInput: UserUpdateInput): Promise<UserWithInclude> => {
+        return prisma.user.update({
+            where: { id },
+            data: userUpdateInput,
+            include: {
+                ProfileImage: true,
+            },
+        });
+    }
+
     findById = async (id: string): Promise<User | null> => {
         const user = await prisma.user.findUnique({
             where: { id },
+            include: {
+                ProfileImage: true,
+            },
+        });
+        return user;
+    }
+
+    findByIdWithInclude = async (id: string, include: UserInclude): Promise<UserWithInclude | null> => {
+        const user = await prisma.user.findUnique({
+            where: { id },
+            include,
         });
         return user;
     }

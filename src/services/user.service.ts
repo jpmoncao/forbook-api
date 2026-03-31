@@ -1,11 +1,11 @@
-import type { UserCreateBody } from "@/schemas/user.schema";
-import { UserCreateInput } from "@/generated/prisma/models"
+import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
+import { UserCreateInput, UserUpdateInput } from "@/generated/prisma/models"
 import UserRepository from "@/repositories/user.repository";
 import Hash from "@/utils/hash";
 import { EUserException } from "@/errors/enums/user";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
-import { UserPublic } from "@/types/User";
+import { toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclude } from "@/types/User";
 
 export default class UserService {
     private readonly repository: UserRepository;
@@ -52,17 +52,37 @@ export default class UserService {
             }
         }
 
-        const user = await this.repository.create(userCreateInput) as UserPublic;
-        return user;
+        const user = await this.repository.create(userCreateInput);
+        return toUserPublic(user);
     }
 
-    getMe = async (userId: string): Promise<UserPublic> => {
+    getMe = async (userId: string): Promise<UserPublicWithInclude> => {
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true });
+        if (!user) {
+            throw new CustomError(EUserException.USER_NOT_FOUND, EStatusCode.NOT_FOUND);
+        }
+
+        return toUserPublicWithInclude(user);
+    }
+
+    updateUser = async (userId: string, body: UserUpdateBody): Promise<UserPublicWithInclude> => {
         const user = await this.repository.findById(userId);
         if (!user) {
             throw new CustomError(EUserException.USER_NOT_FOUND, EStatusCode.NOT_FOUND);
         }
 
-        const { password: _, ...publicUser } = user;
-        return publicUser as UserPublic;
+        const userUpdateInput: UserUpdateInput = {
+            ...(body.name !== undefined && { name: body.name }),
+            ...(body.profileImageId !== undefined && {
+                ProfileImage: {
+                    connect: {
+                        id: body.profileImageId,
+                    },
+                },
+            }),
+        }
+
+        const updatedUser = await this.repository.update(userId, userUpdateInput);
+        return toUserPublicWithInclude(updatedUser);
     }
 }

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import UserService from "../services/user.service";
-import type { UserCreateBody } from "@/schemas/user.schema";
+import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
 import { CustomError } from "../errors/custom-error";
 import { EStatusCode } from "../errors/enums/status-code";
 import { EGenericException } from "../errors/enums/generic";
@@ -49,6 +49,34 @@ export default class UserController {
                 data: user,
             });
         } catch (error) {
+            console.error(error);
+
+            if (error instanceof CustomError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+
+            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
+        }
+    }
+
+    updateUser = async (req: Request, res: Response) => {
+        try {
+            const userId = req.userId;
+            if (!userId) {
+                throw new CustomError(EUserException.USER_UNAUTHORIZED, EStatusCode.UNAUTHORIZED);
+            }
+
+            const userUpdateDTO = req.body as UserUpdateBody;
+
+            const user = await this.service.updateUser(userId, userUpdateDTO);
+
+            res.status(200).json({
+                message: "Usuário atualizado com sucesso",
+                data: user,
+            });
+        }
+        catch (error) {
             console.error(error);
 
             if (error instanceof CustomError) {

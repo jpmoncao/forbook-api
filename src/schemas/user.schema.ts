@@ -41,4 +41,12 @@ export const userCreateBodySchema = z
     })
     .strict();
 
+export const userUpdateBodySchema = z
+    .object({
+        name: z.string("Nome deve ser um texto").trim().min(2, "Nome deve ter no mínimo 2 caracteres").optional(),
+        profileImageId: z.string("ID da imagem de perfil deve ser um texto").trim().uuid("ID da imagem de perfil deve ser um UUID válido").optional(),
+    })
+    .strict();
+
 export type UserCreateBody = z.infer<typeof userCreateBodySchema>;
+export type UserUpdateBody = z.infer<typeof userUpdateBodySchema>;
