@@ -3,3 +3,7 @@ node_modules
 .env
 
 /generated/prisma
+
+firebase.json
+firebase-adminsdk-*.json
+*serviceAccount*.json
