@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import UserService from "../services/user.service";
+import UserService from "@/services/user.service";
 import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
-import { CustomError } from "../errors/custom-error";
-import { EStatusCode } from "../errors/enums/status-code";
-import { EGenericException } from "../errors/enums/generic";
+import { CustomError } from "@/errors/custom-error";
+import { EStatusCode } from "@/errors/enums/status-code";
+import { EGenericException } from "@/errors/enums/generic";
 import { EUserException } from "@/errors/enums/user";
 
 export default class UserController {
