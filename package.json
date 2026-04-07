@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx src/app.ts",
     "dev": "tsx watch src/app.ts",
-    "render": "npm i && npx prisma generate && npx prisma migrate deploy"
+    "migrate:supabase": "PRISMA_USE_DIRECT_URL=1 DEBUG=prisma:migrate,prisma:engine npx prisma migrate deploy",
+    "render": "npm i && npx prisma generate && npm run migrate:supabase"
   },
   "keywords": [],
   "author": "",
