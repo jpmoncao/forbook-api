@@ -4,6 +4,7 @@ import type { UserBookCreateWithUserIdBody, UserBookUpdateWithUserIdBody } from 
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
 import { EGenericException } from "@/errors/enums/generic";
+import { UserBookStatus } from "@/generated/prisma/browser";
 
 export default class UserBookController {
     private readonly service: UserBookService;
@@ -64,15 +65,69 @@ export default class UserBookController {
         }
     }
 
-    findUserBookById = async (req: Request, res: Response) => {
+    getUserBookById = async (req: Request, res: Response) => {
         try {
             const userBookId = req.params.id as string;
 
-            const userBook = await this.service.findUserBookById(userBookId);
+            const userBook = await this.service.getUserBookById(userBookId);
 
             res.status(200).json({
                 message: "Anúncio de livro encontrado com sucesso",
                 data: userBook,
+            });
+        }
+        catch (error) {
+            console.error(error);
+
+            if (error instanceof CustomError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+
+            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
+        }
+    }
+
+    getAllUserBooks = async (req: Request, res: Response) => {
+        try {
+            const userId = req.userId as string;
+            const userBooks = await this.service.getAllUserBooks({
+                userId: {
+                    not: userId,
+                },
+                status: UserBookStatus.ACTIVE,
+                isPrivate: false,
+            });
+
+            res.status(200).json({
+                message: "Anúncios de livros encontrados com sucesso",
+                data: userBooks,
+            });
+        }
+        catch (error) {
+            console.error(error);
+
+            if (error instanceof CustomError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+
+            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
+        }
+    }
+
+    getMyUserBooks = async (req: Request, res: Response) => {
+        try {
+            const userId = req.userId as string;
+            const userBooks = await this.service.getAllUserBooks({
+                userId,
+                status: UserBookStatus.ACTIVE,
+                isPrivate: false,
+            });
+
+            res.status(200).json({
+                message: "Meus anúncios de livros encontrados com sucesso",
+                data: userBooks,
             });
         }
         catch (error) {

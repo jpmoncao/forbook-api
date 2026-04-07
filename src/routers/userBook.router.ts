@@ -7,8 +7,9 @@ import { validateToken } from "@/middlewares/validate-token";
 const userBookRouter = Router();
 const controller = new UserBookController();
 
-// userBookRouter.get("/", validateToken, controller.getUserBooks);
-userBookRouter.get("/:id", validateToken, controller.findUserBookById);
+userBookRouter.get("/", validateToken, controller.getAllUserBooks);
+userBookRouter.get("/my", validateToken, controller.getMyUserBooks);
+userBookRouter.get("/:id", validateToken, controller.getUserBookById);
 userBookRouter.post("/", validateToken, validateBody(userBookCreateBodySchema), controller.createUserBook);
 userBookRouter.put("/:id", validateToken, validateBody(userBookUpdateBodySchema), controller.updateUserBook);
 

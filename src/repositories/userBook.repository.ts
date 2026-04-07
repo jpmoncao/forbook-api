@@ -1,6 +1,6 @@
 import prisma from "@/config/prisma";
-import { UserBook } from "@/generated/prisma/client";
-import { UserBookCreateInput, UserBookUpdateInput } from "@/generated/prisma/models";
+import { UserBook, UserBookStatus } from "@/generated/prisma/client";
+import { UserBookCreateInput, UserBookUpdateInput, UserBookWhereInput } from "@/generated/prisma/models";
 import { UserBookWithInclude } from "@/types/UserBook";
 
 export default class UserBookRepository {
@@ -45,6 +45,14 @@ export default class UserBookRepository {
             }
         },
     };
+
+    findAll = async (filter: UserBookWhereInput): Promise<UserBookWithInclude[]> => {
+        const userBooks = await prisma.userBook.findMany({
+            where: filter,
+            include: this.userBookInclude,
+        });
+        return userBooks;
+    }
 
     findById = async (id: string): Promise<UserBookWithInclude | null> => {
         const userBook = await prisma.userBook.findFirst({
