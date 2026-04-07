@@ -1,6 +1,6 @@
+import nodemailer from "nodemailer";
+
 import { loginConfirmationEmailHtml } from "@/public/emails/login-confirmation";
-import sgMail from "@sendgrid/mail";
-import { MailtrapClient } from "mailtrap";
 
 function parseEmailFrom(from: string): { email: string; name?: string } {
     const trimmed = from.trim();
@@ -14,63 +14,65 @@ function parseEmailFrom(from: string): { email: string; name?: string } {
 }
 
 export default class MailService {
+    private DEV_MODE = process.env.NODE_ENV !== 'production';
+    private transporter?: nodemailer.Transporter;
+
+    constructor() {
+        if (this.DEV_MODE) {
+            nodemailer.createTestAccount().then(testAccount => {
+                this.transporter = nodemailer.createTransport({
+                    host: testAccount.smtp.host,
+                    port: testAccount.smtp.port,
+                    secure: testAccount.smtp.secure,
+                    auth: {
+                        user: testAccount.user,
+                        pass: testAccount.pass
+                    }
+                });
+            });
+
+            return;
+        }
+
+        this.transporter = nodemailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
+            auth: {
+                user: process.env.MAIL_USER,
+                pass: process.env.MAIL_PASS,
+            }
+        });
+    }
+
     sendMail = async (params: {
         to: string;
         subject: string;
         text: string;
         html?: string;
     }): Promise<void> => {
+        if (!this.transporter) {
+            throw new Error("Email Transporter não configurado.");
+        }
+
         const fromRaw = process.env.EMAIL_FROM;
         if (!fromRaw) {
             throw new Error("EMAIL_FROM é obrigatório.");
         }
 
         const from = parseEmailFrom(fromRaw);
-        const isProd = process.env.NODE_ENV === "production";
 
-        if (isProd) {
-            const apiKey = process.env.SENDGRID_API_KEY;
-            if (!apiKey) {
-                throw new Error("SENDGRID_API_KEY é obrigatório em produção (NODE_ENV=production).");
-            }
-
-            sgMail.setApiKey(apiKey);
-            await sgMail.send({
-                to: params.to,
-                from,
-                subject: params.subject,
-                text: params.text,
-                html: params.html,
-            });
-            return;
-        }
-
-        const token = process.env.MAILTRAP_API_KEY;
-        const inboxIdRaw = process.env.MAILTRAP_INBOX_ID;
-        if (!token || !inboxIdRaw) {
-            throw new Error(
-                "MAILTRAP_API_KEY e MAILTRAP_INBOX_ID são obrigatórios em desenvolvimento (API Sandbox do Mailtrap).",
-            );
-        }
-
-        const testInboxId = Number(inboxIdRaw);
-        if (!Number.isFinite(testInboxId)) {
-            throw new Error("MAILTRAP_INBOX_ID deve ser um número (ID da inbox na URL do Mailtrap).");
-        }
-
-        const client = new MailtrapClient({
-            token,
-            sandbox: true,
-            testInboxId,
-        });
-
-        await client.send({
-            from: { email: from.email, ...(from.name ? { name: from.name } : {}) },
-            to: [{ email: params.to }],
+        const message = await this.transporter.sendMail({
+            from: `"Forbook" <${from.email}>`,
+            to: params.to,
             subject: params.subject,
-            text: params.text,
-            ...(params.html ? { html: params.html } : {}),
+            html: params.html,
+            text: params.text
         });
+
+        if (this.DEV_MODE) {
+            console.log(`[✓ Mailservice] URL: ${nodemailer.getTestMessageUrl(message)}`);
+        }
     };
 
     sendLoginCode = async (to: string, name: string, code: string): Promise<void> => {
