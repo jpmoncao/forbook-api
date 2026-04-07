@@ -1,10 +1,10 @@
 import type { UserBookCreateWithUserIdBody, UserBookUpdateWithUserIdBody } from "@/schemas/userBook.schema";
-import { UserBookCreateInput, UserBookUpdateInput } from "@/generated/prisma/models"
+import { UserBookCreateInput, UserBookFieldRefs, UserBookUpdateInput, UserBookWhereInput, UserFieldRefs } from "@/generated/prisma/models"
 import UserBookRepository from "@/repositories/userBook.repository";
 import { EUserBookException } from "@/errors/enums/userBook";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
-import { UserBook } from "@/generated/prisma/browser";
+import { UserBook, UserBookStatus } from "@/generated/prisma/browser";
 import UserRepository from "@/repositories/user.repository";
 import { EUserException } from "@/errors/enums/user";
 import { UserBookWithInclude } from "@/types/UserBook";
@@ -104,11 +104,16 @@ export default class UserBookService {
         return updatedUserBook;
     }
 
-    findUserBookById = async (userBookId: string): Promise<UserBookWithInclude> => {
+    getUserBookById = async (userBookId: string): Promise<UserBookWithInclude> => {
         const userBook = await this.repository.findById(userBookId) as UserBookWithInclude;
         if (!userBook) {
             throw new CustomError(EUserBookException.USERBOOK_NOT_FOUND, EStatusCode.NOT_FOUND);
         }
         return userBook;
+    }
+
+    getAllUserBooks = async (filter: UserBookWhereInput): Promise<UserBookWithInclude[]> => {
+        const userBooks = await this.repository.findAll(filter) as UserBookWithInclude[];
+        return userBooks;
     }
 }
