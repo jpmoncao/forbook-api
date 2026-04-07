@@ -1,13 +1,21 @@
 {
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "target": "ES2023",
     "strict": true,
     "esModuleInterop": true,
+    "outDir": "./dist",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/generated/*": ["./generated/*"]
+      "@/generated/*": ["./generated/*"],
+      "@/*": ["./src/*"]
     }
+  },
+  "include": ["src/**/*.ts", "prisma.config.ts"],
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "resolveFullExtension": ".js"
   }
 }
