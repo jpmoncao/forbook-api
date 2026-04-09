@@ -22,7 +22,14 @@ const prisma = new PrismaClient({
  * Chama no bootstrap (ex.: antes de app.listen).
  */
 export async function connectPrisma(): Promise<void> {
-    await prisma.$connect();
+    await prisma.$connect()
+        .then(() => {
+            console.log(`[${new Date().toISOString()}] Conectado à base de dados`);
+        })
+        .catch((error) => {
+            console.error(`[${new Date().toISOString()}] Erro ao conectar à base de dados:`, error);
+            process.exit(1);
+        });
 }
 
 export async function disconnectPrisma(): Promise<void> {

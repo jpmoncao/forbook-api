@@ -1,49 +1,49 @@
 import prisma from "@/config/prisma";
 import { CatalogBook } from "@/generated/prisma/client";
-import { CatalogBookCreateInput, CatalogBookInclude, CatalogBookUpdateInput } from "@/generated/prisma/models";
+import { CatalogBookCreateInput, CatalogBookUpdateInput } from "@/generated/prisma/models";
 
-export default class CatalogBookRepository{
-    create = async(catalogBookCreateInput: CatalogBookCreateInput): Promise<CatalogBook> => {
+export default class CatalogBookRepository {
+    create = async (catalogBookCreateInput: CatalogBookCreateInput): Promise<CatalogBook> => {
         const catalogBook = await prisma.catalogBook.create({
             data: catalogBookCreateInput
         });
         return catalogBook;
     }
 
-    update = async(isbn: string, catalogBookUpdateInput: CatalogBookUpdateInput): Promise<CatalogBook> => {
+    update = async (isbn: string, catalogBookUpdateInput: CatalogBookUpdateInput): Promise<CatalogBook> => {
         return prisma.catalogBook.update({
             where: { isbn },
             data: catalogBookUpdateInput,
         });
     }
 
-    findById = async(id: string): Promise<CatalogBook | null> => {
+    findById = async (id: string): Promise<CatalogBook | null> => {
         const catalogBook = await prisma.catalogBook.findUnique({
             where: { id },
         })
         return catalogBook;
     }
 
-    findByIsbn = async(isbn: string): Promise<CatalogBook | null> => {
+    findByIsbn = async (isbn: string): Promise<CatalogBook | null> => {
         const catalogBook = await prisma.catalogBook.findUnique({
-            where: {isbn},
+            where: { isbn },
         });
         return catalogBook;
     }
 
-    findByTitle = async(title: string): Promise<CatalogBook[]> => {
+    findByTitle = async (title: string): Promise<CatalogBook[]> => {
         const catalogBook = await prisma.catalogBook.findMany({
-            where: {title},
+            where: { title },
         });
         return catalogBook
     }
 
-    findByAuthor = async(author: string): Promise<CatalogBook[]> => {
+    findByAuthor = async (author: string): Promise<CatalogBook[]> => {
         const catalogBook = await prisma.catalogBook.findMany({
-            where: {author}
+            where: { author }
         });
         return catalogBook
     }
 
-    
+
 }
