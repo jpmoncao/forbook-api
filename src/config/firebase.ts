@@ -36,7 +36,19 @@ export function getFirebaseApp(): admin.app.App {
         return firebaseApp;
     }
 
-    throw new Error("Firebase Admin não configurado: defina FIREBASE_CONFIG_PATH.");
+    const firebaseServiceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (firebaseServiceAccountJson) {
+        firebaseApp = admin.initializeApp({
+            credential: admin.credential.cert(JSON.parse(firebaseServiceAccountJson) as admin.ServiceAccount),
+            storageBucket
+        });
+    }
+
+    if (!firebaseApp) {
+        throw new Error("Firebase Admin não configurado: defina FIREBASE_CONFIG_PATH ou FIREBASE_SERVICE_ACCOUNT_JSON.");
+    }
+
+    return firebaseApp;
 }
 
 export async function verifyFirebaseIdToken(idToken: string): Promise<admin.auth.DecodedIdToken> {

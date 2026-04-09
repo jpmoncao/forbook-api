@@ -8,7 +8,7 @@ const secret = process.env.JWT_SECRET ?? "";
 
 export default class Jwt {
     static generateAccessToken(userId: string): string {
-        return jwt.sign({ userId }, secret, { expiresIn: "2h" });
+        return jwt.sign({ userId }, secret, { expiresIn: "15d" });
     }
 
     static generateRefreshToken(userId: string): string {

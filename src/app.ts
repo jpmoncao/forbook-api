@@ -7,6 +7,7 @@ import { connectPrisma, disconnectPrisma } from "@/config/prisma";
 import userRouter from "@/routers/user.router";
 import authRouter from "@/routers/auth.router";
 import imageRouter from "@/routers/image.router";
+import userBookRouter from "@/routers/userBook.router";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get("/health", (_, res: Response) => {
 app.use("/users", userRouter);
 app.use("/auth", authRouter);
 app.use("/images", imageRouter);
+app.use("/user-books", userBookRouter);
 
 const PORT = 3002;
 
