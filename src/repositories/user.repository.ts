@@ -1,62 +1,39 @@
-import prisma from "@/config/prisma";
-import { User } from "@/generated/prisma/client";
-import { UserCreateInput, UserInclude, UserUpdateInput } from "@/generated/prisma/models";
+import type { User } from "@/generated/prisma/client";
+import type { UserCreateInput, UserInclude, UserUpdateInput } from "@/generated/prisma/models";
+import AbstractRepository from "@/shared/repository";
 import type { UserWithInclude } from "@/types/User";
 
-export default class UserRepository {
-    create = async (userCreateInput: UserCreateInput): Promise<User> => {
-        const user = await prisma.user.create({
-            data: userCreateInput,
-        });
-        return user;
-    }
+export default class UserRepository extends AbstractRepository<
+    "user",
+    User,
+    UserCreateInput,
+    UserUpdateInput
+> {
+    protected readonly modelKey = "user" as const;
 
-    update = async (id: string, userUpdateInput: UserUpdateInput): Promise<UserWithInclude> => {
-        return prisma.user.update({
-            where: { id },
-            data: userUpdateInput,
-            include: {
-                ProfileImage: true,
-            },
-        });
-    }
-
-    findById = async (id: string): Promise<User | null> => {
-        const user = await prisma.user.findUnique({
-            where: { id },
-            include: {
-                ProfileImage: true,
-            },
-        });
-        return user;
-    }
+    findById = (id: string) => this.getById(id);
 
     findByIdWithInclude = async (id: string, include: UserInclude): Promise<UserWithInclude | null> => {
-        const user = await prisma.user.findUnique({
-            where: { id },
-            include,
-        });
-        return user;
-    }
+        return this.database.findUnique({ where: { id }, include });
+    };
 
     findByEmail = async (email: string): Promise<User | null> => {
-        const user = await prisma.user.findFirst({
-            where: { email },
-        });
-        return user;
-    }
+        return this.database.findFirst({ where: { email } });
+    };
 
     findByCpf = async (cpf: string): Promise<User | null> => {
-        const user = await prisma.user.findFirst({
-            where: { cpf },
-        });
-        return user;
-    }
+        return this.database.findFirst({ where: { cpf } });
+    };
 
     findByPhoneNumber = async (phoneNumber: string): Promise<User | null> => {
-        const user = await prisma.user.findFirst({
-            where: { phoneNumber },
+        return this.database.findFirst({ where: { phoneNumber } });
+    };
+
+    override async update(id: string, data: UserUpdateInput): Promise<UserWithInclude> {
+        return this.database.update({
+            where: { id },
+            data,
+            include: { ProfileImage: true },
         });
-        return user;
     }
 }

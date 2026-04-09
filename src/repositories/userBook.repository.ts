@@ -1,81 +1,46 @@
-import prisma from "@/config/prisma";
-import { UserBook, UserBookStatus } from "@/generated/prisma/client";
-import { UserBookCreateInput, UserBookUpdateInput, UserBookWhereInput } from "@/generated/prisma/models";
-import { UserBookWithInclude } from "@/types/UserBook";
+import type { UserBookCreateInput, UserBookUpdateInput, UserBookWhereInput } from "@/generated/prisma/models";
+import AbstractRepository from "@/shared/repository";
+import { userBookInclude, type UserBookWithInclude } from "@/types/UserBook";
 
-export default class UserBookRepository {
-    private readonly userBookInclude = {
-        User: {
-            include: {
-                Address: {
-                    omit: {
-                        createdAt: true,
-                        updatedAt: true,
-                        userId: true,
-                    }
-                },
-                ProfileImage: {
-                    omit: {
-                        createdAt: true,
-                        updatedAt: true,
-                        userBookId: true,
-                    }
-                },
-            },
-            omit: {
-                createdAt: true,
-                updatedAt: true,
-                password: true,
-                cpf: true,
-            }
-        },
-        CatalogBook: true,
-        MainImage: {
-            omit: {
-                createdAt: true,
-                updatedAt: true,
-                userBookId: true,
-            }
-        },
-        GalleryImages: {
-            omit: {
-                createdAt: true,
-                updatedAt: true,
-                userBookId: true,
-            }
-        },
-    };
+export default class UserBookRepository extends AbstractRepository<
+    "userBook",
+    UserBookWithInclude,
+    UserBookCreateInput,
+    UserBookUpdateInput
+> {
+    protected readonly modelKey = "userBook" as const;
 
     findAll = async (filter: UserBookWhereInput): Promise<UserBookWithInclude[]> => {
-        const userBooks = await prisma.userBook.findMany({
+        return this.database.findMany({
             where: filter,
-            include: this.userBookInclude,
+            include: userBookInclude,
         });
-        return userBooks;
-    }
+    };
 
-    findById = async (id: string): Promise<UserBookWithInclude | null> => {
-        const userBook = await prisma.userBook.findFirst({
+    findById = (id: string) => this.getById(id);
+
+    override async getById(id: string): Promise<UserBookWithInclude | null> {
+        return this.database.findFirst({
             where: { id },
-            include: this.userBookInclude,
+            include: userBookInclude,
         });
-        return userBook;
     }
 
-    create = async (userBookCreateInput: UserBookCreateInput): Promise<UserBookWithInclude> => {
-        const userBook = await prisma.userBook.create({
+    override async create(userBookCreateInput: UserBookCreateInput): Promise<UserBookWithInclude> {
+        return this.database.create({
             data: userBookCreateInput,
-            include: this.userBookInclude,
+            include: userBookInclude,
         });
-        return userBook;
     }
 
-    update = async (userBookId: string, userBookUpdateInput: UserBookUpdateInput): Promise<UserBookWithInclude> => {
-        const userBook = await prisma.userBook.update({
+    override async update(
+        userBookId: string,
+        userBookUpdateInput: UserBookUpdateInput,
+    ): Promise<UserBookWithInclude> {
+        return this.database.update({
             where: { id: userBookId },
             data: userBookUpdateInput,
-            include: this.userBookInclude,
+            include: userBookInclude,
         });
-        return userBook;
     }
 }

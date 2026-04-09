@@ -1,6 +1,5 @@
 import { getFirebaseApp } from "@/config/firebase";
 import ImageRepository from "@/repositories/image.repository";
-import imageRepository from "@/repositories/image.repository";
 import { v4 as uuidv4 } from "uuid";
 
 export default class ImageService {
