@@ -9,7 +9,6 @@ import { toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclud
 
 export default class UserService {
     private readonly repository: UserRepository;
-
     constructor() {
         this.repository = new UserRepository();
     }
