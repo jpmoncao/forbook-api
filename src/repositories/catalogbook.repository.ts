@@ -28,15 +28,13 @@ export default class CatalogBookRepository {
         const catalogBook = await prisma.catalogBook.findUnique({
             where: { isbn },
         });
-        return catalogBook;
-    }
+    };
 
     findByTitle = async (title: string): Promise<CatalogBook[]> => {
         const catalogBook = await prisma.catalogBook.findMany({
             where: { title },
         });
-        return catalogBook
-    }
+    };
 
     findByAuthor = async (author: string): Promise<CatalogBook[]> => {
         const catalogBook = await prisma.catalogBook.findMany({

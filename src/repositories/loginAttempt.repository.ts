@@ -1,26 +1,18 @@
-import prisma from "@/config/prisma";
-import { LoginAttempt } from "@/generated/prisma/client";
-import { LoginAttemptCreateInput, LoginAttemptUpdateInput } from "@/generated/prisma/models";
+import type { LoginAttempt } from "@/generated/prisma/client";
+import type { LoginAttemptCreateInput, LoginAttemptUpdateInput } from "@/generated/prisma/models";
+import AbstractRepository from "@/shared/repository";
 
-export default class LoginAttemptRepository {
-    create = async (loginAttemptCreateInput: LoginAttemptCreateInput): Promise<LoginAttempt> => {
-        return await prisma.loginAttempt.create({
-            data: loginAttemptCreateInput
-        });
-    }
-
-    update = async (id: string, loginAttemptUpdateInput: LoginAttemptUpdateInput): Promise<LoginAttempt> => {
-        return await prisma.loginAttempt.update({
-            where: { id },
-            data: loginAttemptUpdateInput
-        });
-    }
+export default class LoginAttemptRepository extends AbstractRepository<
+    "loginAttempt",
+    LoginAttempt,
+    LoginAttemptCreateInput,
+    LoginAttemptUpdateInput
+> {
+    protected readonly modelKey = "loginAttempt" as const;
 
     findByCode = async (code: string): Promise<LoginAttempt | null> => {
-        return await prisma.loginAttempt.findFirst({
-            where: {
-                code
-            }
+        return this.database.findFirst({
+            where: { code },
         });
-    }
+    };
 }
