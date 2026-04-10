@@ -1,7 +1,6 @@
 import { UserBookGetPayload } from "@/generated/prisma/models";
 
-
-export type UserBookWithInclude = UserBookGetPayload<{
+export const userBookInclude = {
     include: {
         User: {
             include: {
@@ -36,5 +35,7 @@ export type UserBookWithInclude = UserBookGetPayload<{
                 userBookId: true,
             }
         },
-    };
-}>;
+    }
+}
+
+export type UserBookWithInclude = UserBookGetPayload<typeof userBookInclude>;
