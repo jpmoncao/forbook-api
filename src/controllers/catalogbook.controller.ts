@@ -26,10 +26,22 @@ export default class CatalogBookController {
     getCatalogBook = async (req: Request, res: Response) => {
         const isbn = (req.params.isbn as string).trim();
         if (!isbn) {
-            throw new CustomError(ECatalogBookException.CATALOG_BOOK_ISBN_NOT_FOUND, EStatusCode.NOT_FOUND);
+            throw new CustomError(
+                EStatusCode.BAD_REQUEST,
+                ECatalogBookException.CATALOG_BOOK_ISBN_NOT_FOUND,
+                "Algum campo obrigatório não foi informado",
+                [{ name: "isbn", reason: "O campo ISBN é obrigatório" }]
+            );
         }
 
         const catalogBook = await this.service.getCatalogBook(isbn);
+        if (!catalogBook) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                ECatalogBookException.CATALOG_BOOK_ISBN_NOT_FOUND,
+                "Nenhum livro encontrado com o ISBN informado"
+            );
+        }
 
         res.status(200).json({
             message: "Catalog Book encontrado",
@@ -40,16 +52,28 @@ export default class CatalogBookController {
     updateCatalogBook = async (req: Request, res: Response) => {
         const isbn = (req.params.isbn as string).trim();
         if (!isbn) {
-            throw new CustomError(ECatalogBookException.CATALOG_BOOK_UNAUTHRORIZED, EStatusCode.UNAUTHORIZED);
+            throw new CustomError(
+                EStatusCode.BAD_REQUEST,
+                ECatalogBookException.CATALOG_BOOK_ISBN_NOT_FOUND,
+                "Algum campo obrigatório não foi informado",
+                [{ name: "isbn", reason: "O campo ISBN é obrigatório" }]
+            );
         }
 
         const catalogBookUpdateDTO = req.body as CatalogBookUpdateBody;
 
         const catalogBook = await this.service.updateCatalogBook(isbn, catalogBookUpdateDTO);
+        if (!catalogBook) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                ECatalogBookException.CATALOG_BOOK_ISBN_NOT_FOUND,
+                "Nenhum livro encontrado com o ISBN informado"
+            );
+        }
 
         res.status(200).json({
             message: "CatalogBook alterado com sucesso",
             data: catalogBook
         });
     }
-}
+}   

@@ -13,7 +13,12 @@ export default class ImageController {
     uploadImage = async (req: Request, res: Response) => {
         const image = req.file;
         if (!image) {
-            throw new CustomError(EImageException.IMAGE_UPLOAD_FAILED, EStatusCode.BAD_REQUEST);
+            throw new CustomError(
+                EStatusCode.BAD_REQUEST,
+                EImageException.IMAGE_UPLOAD_FAILED,
+                "Nenhuma imagem enviada, anexe uma imagem para fazer o upload",
+                [{ name: "file", reason: "O campo file é obrigatório" }]
+            );
         }
 
         const uploadedImage = await this.service.uploadImage(image.buffer, image.mimetype);

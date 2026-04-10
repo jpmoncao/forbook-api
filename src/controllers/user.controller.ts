@@ -26,7 +26,12 @@ export default class UserController {
     getUser = async (req: Request, res: Response) => {
         const userId = req.userId;
         if (!userId) {
-            throw new CustomError(EUserException.USER_UNAUTHORIZED, EStatusCode.UNAUTHORIZED);
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Esse usuário não está autenticado",
+                [{ name: "userId", reason: "O campo userId é obrigatório" }]
+            );
         }
 
         const user = await this.service.getMe(userId);
@@ -40,7 +45,12 @@ export default class UserController {
     updateUser = async (req: Request, res: Response) => {
         const userId = req.userId;
         if (!userId) {
-            throw new CustomError(EUserException.USER_UNAUTHORIZED, EStatusCode.UNAUTHORIZED);
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Esse usuário não está autenticado",
+                [{ name: "userId", reason: "O campo userId é obrigatório" }]
+            );
         }
 
         const userUpdateDTO = req.body as UserUpdateBody;

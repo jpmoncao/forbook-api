@@ -21,7 +21,12 @@ export default class UserBookService {
     createUserBook = async (body: UserBookCreateWithUserIdBody): Promise<UserBookWithInclude> => {
         const user = await this.userRepository.findById(body.userId);
         if (!user) {
-            throw new CustomError(EUserException.USER_NOT_FOUND, EStatusCode.NOT_FOUND);
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + body.userId,
+                [{ name: "userId", reason: "O ID do usuário deve ser válido" }]
+            );
         }
 
         const userBookCreateInput: UserBookCreateInput = {
@@ -69,11 +74,21 @@ export default class UserBookService {
     updateUserBook = async (userBookId: string, body: UserBookUpdateWithUserIdBody): Promise<UserBookWithInclude> => {
         const userBook = await this.repository.findById(userBookId);
         if (!userBook) {
-            throw new CustomError(EUserBookException.USERBOOK_NOT_FOUND, EStatusCode.NOT_FOUND);
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserBookException.USERBOOK_NOT_FOUND,
+                "Livro não encontrado com o ID informado: " + userBookId,
+                [{ name: "userBookId", reason: "O ID do livro deve ser válido" }]
+            );
         }
 
         if (userBook.userId !== body.userId) {
-            throw new CustomError(EUserBookException.USERBOOK_UNAUTHORIZED, EStatusCode.UNAUTHORIZED);
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserBookException.USERBOOK_UNAUTHORIZED,
+                "Livro não pertence ao usuário informado: " + body.userId,
+                [{ name: "userId", reason: "O ID do usuário deve ser o mesmo do livro" }]
+            );
         }
 
         const userBookUpdateInput: UserBookUpdateInput = {
@@ -107,7 +122,12 @@ export default class UserBookService {
     getUserBookById = async (userBookId: string): Promise<UserBookWithInclude> => {
         const userBook = await this.repository.findById(userBookId) as UserBookWithInclude;
         if (!userBook) {
-            throw new CustomError(EUserBookException.USERBOOK_NOT_FOUND, EStatusCode.NOT_FOUND);
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserBookException.USERBOOK_NOT_FOUND,
+                "Livro não encontrado com o ID informado: " + userBookId,
+                [{ name: "userBookId", reason: "O ID do livro deve ser válido" }]
+            );
         }
         return userBook;
     }
