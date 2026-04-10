@@ -13,7 +13,12 @@ export const multerMiddleware = multer({
             cb(null, true);
         } else {
             cb(null, false);
-            throw new CustomError(EImageException.IMAGE_UPLOAD_FAILED, EStatusCode.BAD_REQUEST);
+            throw new CustomError(
+                EStatusCode.BAD_REQUEST,
+                EImageException.IMAGE_UPLOAD_FAILED,
+                "O tipo do arquivo enviado falhou na validação como uma imagem",
+                [{ name: "file", reason: "O tipo do arquivo deve ser uma imagem" }]
+            );
         }
     },
 });

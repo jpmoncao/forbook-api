@@ -26,12 +26,20 @@ export default class AuthService {
     login = async (body: LoginBody): Promise<void> => {
         const user = await this.userRepository.findByEmail(body.email);
         if (!user) {
-            throw new CustomError(EUserException.USER_NOT_FOUND, EStatusCode.NOT_FOUND);
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o email informado: " + body.email
+            );
         }
 
         const isPasswordValid = await Hash.compare(body.password + (process.env.PEPPER_SECRET ?? ""), user.password);
         if (!isPasswordValid) {
-            throw new CustomError(EUserException.USER_INVALID_PASSWORD, EStatusCode.UNAUTHORIZED);
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_INVALID_PASSWORD,
+                "A senha informada não confere com a senha do usuário"
+            );
         }
 
         const code = Array.from({ length: 6 }, () => Math.random().toString(36)[2]).join('');
@@ -51,7 +59,11 @@ export default class AuthService {
 
         const loginAttempt = await this.loginAttemptRepository.create(loginAttemptCreateInput);
         if (!loginAttempt) {
-            throw new CustomError(ELoginAttemptException.LOGIN_ATTEMPT_CREATION_FAILED, EStatusCode.INTERNAL_SERVER_ERROR);
+            throw new CustomError(
+                EStatusCode.INTERNAL_SERVER_ERROR,
+                ELoginAttemptException.LOGIN_ATTEMPT_CREATION_FAILED,
+                "Ocorreu um erro ao criar a tentativa de login"
+            );
         }
 
         await this.mailService.sendLoginCode(user.email, user.name.split(" ")[0], code);
@@ -62,20 +74,42 @@ export default class AuthService {
     confirmLogin = async (body: ConfirmLoginBody): Promise<{ accessToken: string, refreshToken: string }> => {
         const loginAttempt = await this.loginAttemptRepository.findByCode(body.code);
         if (!loginAttempt) {
-            throw new CustomError(ELoginAttemptException.LOGIN_ATTEMPT_NOT_FOUND, EStatusCode.NOT_FOUND);
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                ELoginAttemptException.LOGIN_ATTEMPT_NOT_FOUND,
+                "Tentativa de login não encontrada com o código informado: " + body.code,
+                [{ name: "code", reason: "O código de autentificação deve ser válido" }]
+            );
         }
 
         if (loginAttempt.expiresAt.getTime() < new Date().getTime()) {
-            throw new CustomError(ELoginAttemptException.LOGIN_ATTEMPT_EXPIRED, EStatusCode.UNAUTHORIZED);
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                ELoginAttemptException.LOGIN_ATTEMPT_EXPIRED,
+                "A tentativa de login expirou em: " + loginAttempt.expiresAt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }),
+                [{ name: "expiresAt", reason: "A tentativa de login deve ser renovada antes de expirar" }]
+            );
         }
 
         if (loginAttempt.success) {
-            throw new CustomError(ELoginAttemptException.LOGIN_ATTEMPT_ALREADY_USED, EStatusCode.BAD_REQUEST);
+            throw new CustomError(
+                EStatusCode.BAD_REQUEST,
+                ELoginAttemptException.LOGIN_ATTEMPT_ALREADY_USED,
+                "Tente novamente com um novo código de autentificação"
+            );
         }
 
         const user = await this.userRepository.findById(loginAttempt.userId);
         if (!user || user.email !== body.email) {
-            throw new CustomError(ELoginAttemptException.LOGIN_ATTEMPT_INVALID_USER, EStatusCode.UNAUTHORIZED);
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                ELoginAttemptException.LOGIN_ATTEMPT_INVALID_USER,
+                "O código de autentificação informado não pertence ao usuário informado",
+                [
+                    { name: "email", reason: "O email do usuário deve ser o mesmo do código de autentificação" },
+                    { name: "code", reason: "O código de autentificação deve pertencer ao usuário informado" }
+                ]
+            );
         }
 
         await this.loginAttemptRepository.update(loginAttempt.id, {

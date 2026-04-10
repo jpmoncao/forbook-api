@@ -1,9 +1,6 @@
 import { Request, Response } from "express";
 import UserBookService from "@/services/userBook.service";
 import type { UserBookCreateWithUserIdBody, UserBookUpdateWithUserIdBody } from "@/schemas/userBook.schema";
-import { CustomError } from "@/errors/custom-error";
-import { EStatusCode } from "@/errors/enums/status-code";
-import { EGenericException } from "@/errors/enums/generic";
 import { UserBookStatus } from "@/generated/prisma/browser";
 
 export default class UserBookController {
@@ -14,131 +11,72 @@ export default class UserBookController {
     }
 
     createUserBook = async (req: Request, res: Response) => {
-        try {
-            const userId = req.userId as string;
+        const userId = req.userId as string;
 
-            req.body.userId = userId;
-            const userBookCreateDTO = req.body as UserBookCreateWithUserIdBody;
+        req.body.userId = userId;
+        const userBookCreateDTO = req.body as UserBookCreateWithUserIdBody;
 
-            const userBook = await this.service.createUserBook(userBookCreateDTO);
+        const userBook = await this.service.createUserBook(userBookCreateDTO);
 
-            res.status(201).json({
-                message: "Anúncio de livro criado com sucesso",
-                data: userBook
-            });
-        } catch (error) {
-            console.error(error);
-
-            if (error instanceof CustomError) {
-                res.status(error.statusCode).json({ message: error.message });
-                return;
-            }
-
-            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
-        }
+        res.status(201).json({
+            message: "Anúncio de livro criado com sucesso",
+            data: userBook
+        });
     }
 
     updateUserBook = async (req: Request, res: Response) => {
-        try {
-            const userBookId = req.params.id as string;
-            const userId = req.userId as string;
+        const userBookId = req.params.id as string;
+        const userId = req.userId as string;
 
-            req.body.userId = userId;
-            const userBookUpdateDTO = req.body as UserBookUpdateWithUserIdBody;
+        req.body.userId = userId;
+        const userBookUpdateDTO = req.body as UserBookUpdateWithUserIdBody;
 
-            const userBook = await this.service.updateUserBook(userBookId, userBookUpdateDTO);
+        const userBook = await this.service.updateUserBook(userBookId, userBookUpdateDTO);
 
-            res.status(200).json({
-                message: "Anúncio de livro atualizado com sucesso",
-                data: userBook,
-            });
-        }
-        catch (error) {
-            console.error(error);
-
-            if (error instanceof CustomError) {
-                res.status(error.statusCode).json({ message: error.message });
-                return;
-            }
-
-            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
-        }
+        res.status(200).json({
+            message: "Anúncio de livro atualizado com sucesso",
+            data: userBook,
+        });
     }
 
     getUserBookById = async (req: Request, res: Response) => {
-        try {
-            const userBookId = req.params.id as string;
+        const userBookId = req.params.id as string;
 
-            const userBook = await this.service.getUserBookById(userBookId);
+        const userBook = await this.service.getUserBookById(userBookId);
 
-            res.status(200).json({
-                message: "Anúncio de livro encontrado com sucesso",
-                data: userBook,
-            });
-        }
-        catch (error) {
-            console.error(error);
-
-            if (error instanceof CustomError) {
-                res.status(error.statusCode).json({ message: error.message });
-                return;
-            }
-
-            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
-        }
+        res.status(200).json({
+            message: "Anúncio de livro encontrado com sucesso",
+            data: userBook,
+        });
     }
 
     getAllUserBooks = async (req: Request, res: Response) => {
-        try {
-            const userId = req.userId as string;
-            const userBooks = await this.service.getAllUserBooks({
-                userId: {
-                    not: userId,
-                },
-                status: UserBookStatus.ACTIVE,
-                isPrivate: false,
-            });
+        const userId = req.userId as string;
+        const userBooks = await this.service.getAllUserBooks({
+            userId: {
+                not: userId,
+            },
+            status: UserBookStatus.ACTIVE,
+            isPrivate: false,
+        });
 
-            res.status(200).json({
-                message: "Anúncios de livros encontrados com sucesso",
-                data: userBooks,
-            });
-        }
-        catch (error) {
-            console.error(error);
-
-            if (error instanceof CustomError) {
-                res.status(error.statusCode).json({ message: error.message });
-                return;
-            }
-
-            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
-        }
+        res.status(200).json({
+            message: "Anúncios de livros encontrados com sucesso",
+            data: userBooks,
+        });
     }
 
     getMyUserBooks = async (req: Request, res: Response) => {
-        try {
-            const userId = req.userId as string;
-            const userBooks = await this.service.getAllUserBooks({
-                userId,
-                status: UserBookStatus.ACTIVE,
-                isPrivate: false,
-            });
+        const userId = req.userId as string;
+        const userBooks = await this.service.getAllUserBooks({
+            userId,
+            status: UserBookStatus.ACTIVE,
+            isPrivate: false,
+        });
 
-            res.status(200).json({
-                message: "Meus anúncios de livros encontrados com sucesso",
-                data: userBooks,
-            });
-        }
-        catch (error) {
-            console.error(error);
-
-            if (error instanceof CustomError) {
-                res.status(error.statusCode).json({ message: error.message });
-                return;
-            }
-
-            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
-        }
+        res.status(200).json({
+            message: "Meus anúncios de livros encontrados com sucesso",
+            data: userBooks,
+        });
     }
 }

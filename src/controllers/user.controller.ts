@@ -3,7 +3,6 @@ import UserService from "@/services/user.service";
 import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
-import { EGenericException } from "@/errors/enums/generic";
 import { EUserException } from "@/errors/enums/user";
 
 export default class UserController {
@@ -14,77 +13,53 @@ export default class UserController {
     }
 
     createUser = async (req: Request, res: Response) => {
-        try {
-            const userCreateDTO = req.body as UserCreateBody;
+        const userCreateDTO = req.body as UserCreateBody;
 
-            const user = await this.service.createUser(userCreateDTO);
+        const user = await this.service.createUser(userCreateDTO);
 
-            res.status(201).json({
-                message: "Usuário criado com sucesso",
-                data: user
-            });
-        } catch (error) {
-            console.error(error);
-
-            if (error instanceof CustomError) {
-                res.status(error.statusCode).json({ message: error.message });
-                return;
-            }
-
-            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
-        }
+        res.status(201).json({
+            message: "Usuário criado com sucesso",
+            data: user
+        });
     }
 
     getUser = async (req: Request, res: Response) => {
-        try {
-            const userId = req.userId;
-            if (!userId) {
-                throw new CustomError(EUserException.USER_UNAUTHORIZED, EStatusCode.UNAUTHORIZED);
-            }
-
-            const user = await this.service.getMe(userId);
-
-            res.status(200).json({
-                message: "Usuário obtido com sucesso",
-                data: user,
-            });
-        } catch (error) {
-            console.error(error);
-
-            if (error instanceof CustomError) {
-                res.status(error.statusCode).json({ message: error.message });
-                return;
-            }
-
-            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
+        const userId = req.userId;
+        if (!userId) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Esse usuário não está autenticado",
+                [{ name: "userId", reason: "O campo userId é obrigatório" }]
+            );
         }
+
+        const user = await this.service.getMe(userId);
+
+        res.status(200).json({
+            message: "Usuário obtido com sucesso",
+            data: user,
+        });
     }
 
     updateUser = async (req: Request, res: Response) => {
-        try {
-            const userId = req.userId;
-            if (!userId) {
-                throw new CustomError(EUserException.USER_UNAUTHORIZED, EStatusCode.UNAUTHORIZED);
-            }
-
-            const userUpdateDTO = req.body as UserUpdateBody;
-
-            const user = await this.service.updateUser(userId, userUpdateDTO);
-
-            res.status(200).json({
-                message: "Usuário atualizado com sucesso",
-                data: user,
-            });
+        const userId = req.userId;
+        if (!userId) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Esse usuário não está autenticado",
+                [{ name: "userId", reason: "O campo userId é obrigatório" }]
+            );
         }
-        catch (error) {
-            console.error(error);
 
-            if (error instanceof CustomError) {
-                res.status(error.statusCode).json({ message: error.message });
-                return;
-            }
+        const userUpdateDTO = req.body as UserUpdateBody;
 
-            res.status(EStatusCode.INTERNAL_SERVER_ERROR).json({ message: EGenericException.INTERNAL_SERVER_ERROR });
-        }
+        const user = await this.service.updateUser(userId, userUpdateDTO);
+
+        res.status(200).json({
+            message: "Usuário atualizado com sucesso",
+            data: user,
+        });
     }
 }

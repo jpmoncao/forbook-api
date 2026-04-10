@@ -16,17 +16,32 @@ export default class UserService {
     createUser = async (body: UserCreateBody): Promise<UserPublic> => {
         const existingUserEmail = await this.repository.findByEmail(body.email);
         if (existingUserEmail) {
-            throw new CustomError(EUserException.USER_EMAIL_ALREADY_EXISTS, EStatusCode.CONFLICT);
+            throw new CustomError(
+                EStatusCode.CONFLICT,
+                EUserException.USER_EMAIL_ALREADY_EXISTS,
+                "O email informado já está em uso: " + body.email,
+                [{ name: "email", reason: "O email deve ser único" }]
+            );
         }
 
         const existingUserCpf = await this.repository.findByCpf(body.cpf);
         if (existingUserCpf) {
-            throw new CustomError(EUserException.USER_CPF_ALREADY_EXISTS, EStatusCode.CONFLICT);
+            throw new CustomError(
+                EStatusCode.CONFLICT,
+                EUserException.USER_CPF_ALREADY_EXISTS,
+                "O CPF informado já está em uso: " + body.cpf,
+                [{ name: "cpf", reason: "O CPF deve ser único" }]
+            );
         }
 
         const existingUserPhoneNumber = await this.repository.findByPhoneNumber(body.phoneNumber);
         if (existingUserPhoneNumber) {
-            throw new CustomError(EUserException.USER_PHONE_NUMBER_ALREADY_EXISTS, EStatusCode.CONFLICT);
+            throw new CustomError(
+                EStatusCode.CONFLICT,
+                EUserException.USER_PHONE_NUMBER_ALREADY_EXISTS,
+                "O número de telefone informado já está em uso: " + body.phoneNumber,
+                [{ name: "phoneNumber", reason: "O número de telefone deve ser único" }]
+            );
         }
 
         const password = await Hash.hash(body.password + (process.env.PEPPER_SECRET ?? ""));
@@ -58,7 +73,12 @@ export default class UserService {
     getMe = async (userId: string): Promise<UserPublicWithInclude> => {
         const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true });
         if (!user) {
-            throw new CustomError(EUserException.USER_NOT_FOUND, EStatusCode.NOT_FOUND);
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + userId,
+                [{ name: "userId", reason: "O ID do usuário deve ser válido" }]
+            );
         }
 
         return toUserPublicWithInclude(user);
@@ -67,7 +87,12 @@ export default class UserService {
     updateUser = async (userId: string, body: UserUpdateBody): Promise<UserPublicWithInclude> => {
         const user = await this.repository.findById(userId);
         if (!user) {
-            throw new CustomError(EUserException.USER_NOT_FOUND, EStatusCode.NOT_FOUND);
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + userId,
+                [{ name: "userId", reason: "O ID do usuário deve ser válido" }]
+            );
         }
 
         const userUpdateInput: UserUpdateInput = {

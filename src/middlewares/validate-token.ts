@@ -8,12 +8,22 @@ import { CustomError } from "@/errors/custom-error";
 export function validateToken(req: Request, res: Response, next: NextFunction): void {
     const auth = req.headers.authorization;
     if (!auth?.startsWith("Bearer ")) {
-        throw new CustomError(EAuthException.AUTH_INVALID_TOKEN, EStatusCode.UNAUTHORIZED);
+        throw new CustomError(
+            EStatusCode.UNAUTHORIZED,
+            EAuthException.AUTH_INVALID_TOKEN,
+            "O header espera um bearer token",
+            [{ name: "authorization", reason: "O token de autentificação deve ser um bearer token" }]
+        );
     }
 
     const token = auth.slice("Bearer ".length).trim();
     if (!token) {
-        throw new CustomError(EAuthException.AUTH_INVALID_TOKEN, EStatusCode.UNAUTHORIZED);
+        throw new CustomError(
+            EStatusCode.UNAUTHORIZED,
+            EAuthException.AUTH_INVALID_TOKEN,
+            "O token de autentificação informado não possui um formato válido",
+            [{ name: "authorization", reason: "O token de autentificação é obrigatório" }]
+        );
     }
 
     try {
@@ -22,12 +32,26 @@ export function validateToken(req: Request, res: Response, next: NextFunction): 
         next();
     } catch (error) {
         if (error instanceof jwt.TokenExpiredError) {
-            throw new CustomError(EAuthException.AUTH_EXPIRED_TOKEN, EStatusCode.UNAUTHORIZED);
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EAuthException.AUTH_EXPIRED_TOKEN,
+                "O token de autentificação expirou, por favor, renovie o token",
+                [{ name: "authorization", reason: "O token de autentificação deve ser renovado" }]
+            );
         }
         if (error instanceof jwt.JsonWebTokenError) {
-            throw new CustomError(EAuthException.AUTH_INVALID_TOKEN, EStatusCode.UNAUTHORIZED);
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EAuthException.AUTH_INVALID_TOKEN,
+                "O token de autentificação informado não é válido",
+                [{ name: "authorization", reason: "O token de autentificação deve ser válido" }]
+            );
         }
-        
-        throw new CustomError(EAuthException.AUTH_INVALID_TOKEN, EStatusCode.INTERNAL_SERVER_ERROR);
+
+        throw new CustomError(
+            EStatusCode.INTERNAL_SERVER_ERROR,
+            EAuthException.AUTH_INVALID_TOKEN,
+            "Ocorreu um erro ao validar o token de autentificação"
+        );
     }
 }

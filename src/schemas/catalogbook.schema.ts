@@ -27,4 +27,14 @@ export const catalogBookCreateBodySchema = z.
     })
     .strict();
 
+export const catalogBookUpdateBodySchema = z.
+    object({
+        description: z.string("Descrição deve ser um texto")
+            .trim()
+            .min(1, "Deve conter no mínimo 1 caracter")
+            .max(255, "Deve conter no máximo 255 caracteres").optional()
+    })
+    .strict();
+
 export type CatalogBookCreateBody = z.infer<typeof catalogBookCreateBodySchema>;
+export type CatalogBookUpdateBody = z.infer<typeof catalogBookUpdateBodySchema>;
