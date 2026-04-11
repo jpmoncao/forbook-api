@@ -1,13 +1,15 @@
 import type { UserBookCreateWithUserIdBody, UserBookUpdateWithUserIdBody } from "@/schemas/userBook.schema";
-import { UserBookCreateInput, UserBookFieldRefs, UserBookUpdateInput, UserBookWhereInput, UserFieldRefs } from "@/generated/prisma/models"
+import { UserBookCreateInput, UserBookUpdateInput, UserBookWhereInput } from "@/generated/prisma/models";
 import UserBookRepository from "@/repositories/userBook.repository";
 import { EUserBookException } from "@/errors/enums/userBook";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
-import { UserBook, UserBookStatus } from "@/generated/prisma/browser";
 import UserRepository from "@/repositories/user.repository";
 import { EUserException } from "@/errors/enums/user";
 import { UserBookWithInclude } from "@/types/UserBook";
+import { IQueryParams } from "@/shared/interfaces/query-param";
+import { buildPaginationMeta } from "@/shared/repository";
+import { IPaginated } from "@/shared/interfaces/paginated";
 
 export default class UserBookService {
     private readonly repository: UserBookRepository;
@@ -72,7 +74,7 @@ export default class UserBookService {
     }
 
     updateUserBook = async (userBookId: string, body: UserBookUpdateWithUserIdBody): Promise<UserBookWithInclude> => {
-        const userBook = await this.repository.findById(userBookId);
+        const userBook = await this.repository.getById(userBookId);
         if (!userBook) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -82,7 +84,7 @@ export default class UserBookService {
             );
         }
 
-        if (userBook.userId !== body.userId) {
+        if (userBook.User.id !== body.userId) {
             throw new CustomError(
                 EStatusCode.UNAUTHORIZED,
                 EUserBookException.USERBOOK_UNAUTHORIZED,
@@ -120,7 +122,7 @@ export default class UserBookService {
     }
 
     getUserBookById = async (userBookId: string): Promise<UserBookWithInclude> => {
-        const userBook = await this.repository.findById(userBookId) as UserBookWithInclude;
+        const userBook = await this.repository.getById(userBookId) as UserBookWithInclude;
         if (!userBook) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -132,8 +134,18 @@ export default class UserBookService {
         return userBook;
     }
 
-    getAllUserBooks = async (filter: UserBookWhereInput): Promise<UserBookWithInclude[]> => {
-        const userBooks = await this.repository.findAll(filter) as UserBookWithInclude[];
-        return userBooks;
+    getAllUserBooks = async (query: IQueryParams): Promise<IPaginated<UserBookWithInclude>> => {
+        const pagination = { page: query.page, limit: query.limit };
+        const filter = query.filter as UserBookWhereInput;
+
+        const [userBooks, total] = await Promise.all([
+            this.repository.getAll(filter, pagination) as Promise<UserBookWithInclude[]>,
+            this.repository.countWhere(filter),
+        ]);
+
+        return {
+            data: userBooks,
+            meta: buildPaginationMeta(total, pagination),
+        };
     }
 }
