@@ -1,6 +1,6 @@
 import type { UserBookCreateInput, UserBookUpdateInput, UserBookWhereInput } from "@/generated/prisma/models";
-import AbstractRepository from "@/shared/repository";
-import { userBookInclude, type UserBookWithInclude } from "@/types/UserBook";
+import AbstractRepository, { type RepositoryPagination } from "@/shared/repository";
+import { userBookQueryArgs, type UserBookWithInclude } from "@/types/UserBook";
 
 export default class UserBookRepository extends AbstractRepository<
     "userBook",
@@ -10,26 +10,30 @@ export default class UserBookRepository extends AbstractRepository<
 > {
     protected readonly modelKey = "userBook" as const;
 
-    findAll = async (filter: UserBookWhereInput): Promise<UserBookWithInclude[]> => {
-        return this.database.findMany({
-            where: filter,
-            include: userBookInclude,
-        });
+    override getAll = async (
+        filter: UserBookWhereInput,
+        pagination?: RepositoryPagination,
+    ): Promise<UserBookWithInclude[]> => {
+        return super.getAll(
+            {
+                where: filter,
+                ...userBookQueryArgs,
+            },
+            pagination,
+        );
     };
-
-    findById = (id: string) => this.getById(id);
 
     override async getById(id: string): Promise<UserBookWithInclude | null> {
         return this.database.findFirst({
             where: { id },
-            include: userBookInclude,
+            ...userBookQueryArgs,
         });
     }
 
     override async create(userBookCreateInput: UserBookCreateInput): Promise<UserBookWithInclude> {
         return this.database.create({
             data: userBookCreateInput,
-            include: userBookInclude,
+            ...userBookQueryArgs,
         });
     }
 
@@ -40,7 +44,7 @@ export default class UserBookRepository extends AbstractRepository<
         return this.database.update({
             where: { id: userBookId },
             data: userBookUpdateInput,
-            include: userBookInclude,
+            ...userBookQueryArgs,
         });
     }
 }
