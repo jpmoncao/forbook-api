@@ -23,29 +23,46 @@ model Image {
 }
 
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  password       String
-  name           String
-  phoneNumber    String
-  cpf            String   @unique
-  birthDate      DateTime
-  profileImageId String?  @unique
+  id                          String   @id @default(uuid())
+  email                       String   @unique
+  password                    String
+  name                        String
+  phoneNumber                 String
+  cpf                         String   @unique
+  birthDate                   DateTime
+  isEmailVerified             Boolean  @default(false)
+  isReceiveTwoFactorAuthEmail Boolean  @default(false)
+  profileImageId              String?  @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  UserBooks     UserBook[]
-  ProfileImage  Image?         @relation("UserProfileImage", fields: [profileImageId], references: [id])
-  Address       Address[]      @relation("UserAddress")
-  Ratings       Rating[]       @relation("UserRatedBy")
-  RatedTo       Rating[]       @relation("UserRatedTo")
-  Wishlist      Wishlist?
-  Orders        Order[]
-  TradeOffers   TradeOffer[]
-  LoginAttempts LoginAttempt[] @relation("UserLoginAttempts")
+  UserBooks          UserBook[]
+  ProfileImage       Image?              @relation("UserProfileImage", fields: [profileImageId], references: [id])
+  Address            Address[]           @relation("UserAddress")
+  Ratings            Rating[]            @relation("UserRatedBy")
+  RatedTo            Rating[]            @relation("UserRatedTo")
+  Wishlist           Wishlist?
+  Orders             Order[]
+  TradeOffers        TradeOffer[]
+  LoginAttempts      LoginAttempt[]      @relation("UserLoginAttempts")
+  VerifyEmailAttempt VerifyEmailAttempt? @relation("UserVerifyEmailAttempt")
 
   @@map("users")
+}
+
+model VerifyEmailAttempt {
+  id         String    @id @default(uuid())
+  userId     String    @unique
+  success    Boolean   @default(false)
+  code       String    @db.VarChar(6)
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  User User @relation("UserVerifyEmailAttempt", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("verify_email_attempt")
 }
 
 model LoginAttempt {
