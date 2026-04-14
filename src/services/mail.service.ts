@@ -1,21 +1,12 @@
 import nodemailer from "nodemailer";
+import sgMail from '@sendgrid/mail';
 
 import { loginConfirmationEmailHtml } from "@/public/emails/login-confirmation";
 
-function parseEmailFrom(from: string): { email: string; name?: string } {
-    const trimmed = from.trim();
-    const bracket = trimmed.match(/^(.+?)\s*<([^>]+)>$/);
-    if (bracket) {
-        const name = bracket[1].trim().replace(/^["']|["']$/g, "");
-        const email = bracket[2].trim();
-        return name ? { email, name } : { email };
-    }
-    return { email: trimmed };
-}
-
 export default class MailService {
     private DEV_MODE = process.env.NODE_ENV !== 'production';
-    private transporter?: nodemailer.Transporter;
+    private transporter: nodemailer.Transporter | null = null;
+    private sendgrid: typeof sgMail | null = null;
 
     constructor() {
         if (this.DEV_MODE) {
@@ -30,36 +21,14 @@ export default class MailService {
                     }
                 });
             });
-
-            return;
-        }
-
-        this.transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 587,
-            secure: false,
-            debug: true,
-            logger: true,
-            auth: {
-                user: process.env.MAIL_USER,
-                pass: process.env.MAIL_PASS,
-            },
-            connectionTimeout: 20000,
-            greetingTimeout: 10000,
-            socketTimeout: 10000,
-            tls: {
-                ciphers: 'SSLv3',
-                rejectUnauthorized: false
-            },
-        });
-
-        this.transporter.verify(function (error, success) {
-            if (error) {
-                console.log("Erro na configuração de e-mail:", error);
-            } else {
-                console.log("Servidor de e-mail pronto para enviar mensagens");
+        } else {
+            const apiKey = process.env.SENDGRID_API_KEY;
+            if (!apiKey) {
+                throw new Error("SENDGRID_API_KEY não configurado.");
             }
-        });
+            sgMail.setApiKey(apiKey);
+            this.sendgrid = sgMail;
+        }
     }
 
     sendMail = async (params: {
@@ -68,28 +37,41 @@ export default class MailService {
         text: string;
         html?: string;
     }): Promise<void> => {
-        if (!this.transporter) {
-            throw new Error("Email Transporter não configurado.");
-        }
-
-        const fromRaw = process.env.EMAIL_FROM;
-        if (!fromRaw) {
-            throw new Error("EMAIL_FROM é obrigatório.");
-        }
-
-        const from = parseEmailFrom(fromRaw);
-
-        const message = await this.transporter.sendMail({
-            from: `"Forbook" <${from.email}>`,
-            to: params.to,
-            subject: params.subject,
-            html: params.html,
-            text: params.text
-        });
+        console.log(`[MailService] Tentando enviar e-mail para: ${params.to} (Modo: ${this.DEV_MODE ? 'DEV' : 'PROD'})`);
 
         if (this.DEV_MODE) {
-            console.log(`[✓ Mailservice] URL: ${nodemailer.getTestMessageUrl(message)}`);
+            if (!this.transporter) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            if (this.transporter) {
+                const message = await this.transporter.sendMail({
+                    from: '"Forbook Test" <no-reply@forbook.com>',
+                    to: params.to,
+                    subject: params.subject,
+                    html: params.html,
+                    text: params.text
+                });
+                console.log(`[✓ Mailservice] E-mail de teste enviado: ${nodemailer.getTestMessageUrl(message)}`);
+            }
+            return;
         }
+
+        if (!this.sendgrid) throw new Error("SendGrid não configurado.");
+
+        const response = await this.sendgrid.send({
+            from: process.env.EMAIL_FROM || "ForBook <noreply@forbook.com>",
+            to: params.to,
+            subject: params.subject,
+            html: params.html || params.text,
+        });
+
+        if (response[0].statusCode !== 202) {
+            console.error("[X Mailservice] Erro no SendGrid:", response[0].body);
+            throw new Error("Falha ao enviar e-mail via SendGrid.");
+        }
+
+        console.log(`[✓ Mailservice] E-mail enviado com sucesso para ${params.to}:`, response[0].body);
     };
 
     sendLoginCode = async (to: string, name: string, code: string): Promise<void> => {
