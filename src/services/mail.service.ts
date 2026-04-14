@@ -36,20 +36,21 @@ export default class MailService {
 
         this.transporter = nodemailer.createTransport({
             host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
+            port: 587,
+            secure: false,
             debug: true,
             logger: true,
             auth: {
                 user: process.env.MAIL_USER,
                 pass: process.env.MAIL_PASS,
             },
-            connectionTimeout: 10000,
+            connectionTimeout: 20000,
             greetingTimeout: 10000,
             socketTimeout: 10000,
             tls: {
+                ciphers: 'SSLv3',
                 rejectUnauthorized: false
-            }
+            },
         });
 
         this.transporter.verify(function (error, success) {
