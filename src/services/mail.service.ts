@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import sgMail from '@sendgrid/mail';
 
 import { loginConfirmationEmailHtml } from "@/public/emails/login-confirmation";
+import { verifyEmailEmailHtml } from "@/public/emails/verify-email";
 
 export default class MailService {
     private DEV_MODE = process.env.NODE_ENV !== 'production';
@@ -80,6 +81,18 @@ export default class MailService {
             subject: "Código de verificação — Forbook",
             text: `Seu código é: ${code}. Ele expira em 10 minutos.`,
             html: loginConfirmationEmailHtml(name, code),
+        });
+    };
+
+
+
+    verifyEmail = async (to: string, code: string): Promise<void> => {
+        const loginUrl = `${process.env.API_URL?.trim() || "#"}/auth/verify-email?code=${code}`;
+        await this.sendMail({
+            to,
+            subject: "Verifique seu e-mail — Forbook",
+            text: `Acesse o link no corpo dessa mensagem para verificar seu e-mail`,
+            html: verifyEmailEmailHtml(loginUrl),
         });
     };
 }

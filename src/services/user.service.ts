@@ -6,11 +6,18 @@ import { EUserException } from "@/errors/enums/user";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
 import { toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclude } from "@/types/User";
+import MailService from "@/services/mail.service";
+import VerifyEmailAttemptRepository from "@/repositories/verifyEmailAttempt.repository";
 
 export default class UserService {
     private readonly repository: UserRepository;
+    private readonly verifyEmailAttemptRepository: VerifyEmailAttemptRepository;
+    private readonly mailService: MailService;
+
     constructor() {
         this.repository = new UserRepository();
+        this.verifyEmailAttemptRepository = new VerifyEmailAttemptRepository();
+        this.mailService = new MailService();
     }
 
     createUser = async (body: UserCreateBody): Promise<UserPublic> => {
@@ -67,6 +74,27 @@ export default class UserService {
         }
 
         const user = await this.repository.create(userCreateInput);
+
+        const code = Array.from({ length: 6 }, () => Math.random().toString(36)[2]).join('');
+        const verifyEmailAttempt = await this.verifyEmailAttemptRepository.create({
+            code,
+            User: {
+                connect: {
+                    id: user.id,
+                },
+            },
+        });
+        if (!verifyEmailAttempt) {
+            throw new CustomError(
+                EStatusCode.INTERNAL_SERVER_ERROR,
+                EUserException.USER_VERIFY_EMAIL_CODE_NOT_FOUND,
+                "Erro ao criar código de verificação",
+                [{ name: "code", reason: "O código de verificação deve ser criado" }]
+            );
+        }
+
+        await this.mailService.verifyEmail(user.email, code);
+
         return toUserPublic(user);
     }
 
@@ -97,6 +125,7 @@ export default class UserService {
 
         const userUpdateInput: UserUpdateInput = {
             ...(body.name !== undefined && { name: body.name }),
+            ...(body.isReceiveTwoFactorAuthEmail !== undefined && { isReceiveTwoFactorAuthEmail: body.isReceiveTwoFactorAuthEmail }),
             ...(body.profileImageId !== undefined && {
                 ProfileImage: {
                     connect: {
