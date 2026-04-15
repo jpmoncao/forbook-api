@@ -13,4 +13,7 @@ export enum EUserException {
     USER_INVALID_NAME = "Nome do usuário inválido",
     USER_INVALID_PHONE_NUMBER = "Número de telefone do usuário inválido",
     USER_INVALID_CPF = "CPF do usuário inválido",
+    USER_EMAIL_NOT_VERIFIED = "O e-mail do usuário não foi verificado",
+    USER_VERIFY_EMAIL_CODE_NOT_FOUND = "Código de verificação não encontrado",
+    USER_VERIFY_EMAIL_CODE_ALREADY_USED = "Código de verificação já foi usado",
 }

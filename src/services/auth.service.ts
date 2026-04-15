@@ -9,27 +9,40 @@ import MailService from "@/services/mail.service";
 import { ELoginAttemptException } from "@/errors/enums/loginAttempt";
 import Jwt from "@/utils/jwt";
 import { ConfirmLoginBody, LoginBody } from "@/schemas/auth.schema";
+import { UserLogin, UserTokens } from "@/types/User";
+import VerifyEmailAttemptRepository from "@/repositories/verifyEmailAttempt.repository";
 
 export default class AuthService {
     static readonly EXPIRATION_TIME = 1000 * 60 * 10; // 10 minutes
 
     private readonly userRepository: UserRepository;
     private readonly loginAttemptRepository: LoginAttemptRepository;
+    private readonly verifyEmailAttemptRepository: VerifyEmailAttemptRepository;
     private readonly mailService: MailService;
 
     constructor() {
         this.userRepository = new UserRepository();
         this.loginAttemptRepository = new LoginAttemptRepository();
+        this.verifyEmailAttemptRepository = new VerifyEmailAttemptRepository();
         this.mailService = new MailService();
     }
 
-    login = async (body: LoginBody): Promise<void> => {
+    login = async (body: LoginBody): Promise<UserLogin | UserTokens> => {
         const user = await this.userRepository.findByEmail(body.email);
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
                 EUserException.USER_NOT_FOUND,
                 "Usuário não encontrado com o email informado: " + body.email
+            );
+        }
+
+        if (!user.isEmailVerified) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_EMAIL_NOT_VERIFIED,
+                "Verifique seu e-mail, enviamos um código de verificação para você",
+                [{ name: "email", reason: "O e-mail do usuário ainda não foi verificado" }]
             );
         }
 
@@ -42,33 +55,47 @@ export default class AuthService {
             );
         }
 
-        const code = Array.from({ length: 6 }, () => Math.random().toString(36)[2]).join('');
+        if (user.isReceiveTwoFactorAuthEmail) {
+            const code = Array.from({ length: 6 }, () => Math.random().toString(36)[2]).join('');
 
-        const now = new Date();
-        const expiresAt = new Date(now.getTime() + AuthService.EXPIRATION_TIME);
+            const now = new Date();
+            const expiresAt = new Date(now.getTime() + AuthService.EXPIRATION_TIME);
 
-        const loginAttemptCreateInput: LoginAttemptCreateInput = {
-            code,
-            expiresAt,
-            User: {
-                connect: {
-                    id: user.id,
+            const loginAttemptCreateInput: LoginAttemptCreateInput = {
+                code,
+                expiresAt,
+                User: {
+                    connect: {
+                        id: user.id,
+                    },
                 },
-            },
-        };
+            };
 
-        const loginAttempt = await this.loginAttemptRepository.create(loginAttemptCreateInput);
-        if (!loginAttempt) {
-            throw new CustomError(
-                EStatusCode.INTERNAL_SERVER_ERROR,
-                ELoginAttemptException.LOGIN_ATTEMPT_CREATION_FAILED,
-                "Ocorreu um erro ao criar a tentativa de login"
-            );
+            const loginAttempt = await this.loginAttemptRepository.create(loginAttemptCreateInput);
+            if (!loginAttempt) {
+                throw new CustomError(
+                    EStatusCode.INTERNAL_SERVER_ERROR,
+                    ELoginAttemptException.LOGIN_ATTEMPT_CREATION_FAILED,
+                    "Ocorreu um erro ao criar a tentativa de login"
+                );
+            }
+
+            await this.mailService.sendLoginCode(user.email, user.name.split(" ")[0], code);
+
+            return {
+                userId: user.id,
+                isEmailVerified: user.isEmailVerified,
+                isReceiveTwoFactorAuthEmail: user.isReceiveTwoFactorAuthEmail,
+            };
         }
 
-        await this.mailService.sendLoginCode(user.email, user.name.split(" ")[0], code);
+        const accessToken = Jwt.generateAccessToken(user.id);
+        const refreshToken = Jwt.generateRefreshToken(user.id);
 
-        return;
+        return {
+            accessToken,
+            refreshToken,
+        };
     }
 
     confirmLogin = async (body: ConfirmLoginBody): Promise<{ accessToken: string, refreshToken: string }> => {
@@ -112,6 +139,15 @@ export default class AuthService {
             );
         }
 
+        if (!user.isEmailVerified) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_EMAIL_NOT_VERIFIED,
+                "O e-mail do usuário não foi verificado, enviamos um código de verificação para você",
+                [{ name: "email", reason: "O e-mail do usuário ainda não foi verificado" }]
+            );
+        }
+
         await this.loginAttemptRepository.update(loginAttempt.id, {
             success: true,
         });
@@ -123,5 +159,44 @@ export default class AuthService {
             accessToken,
             refreshToken,
         };
+    }
+
+    verifyEmailCode = async (code: string): Promise<void> => {
+        const verifyEmailAttempt = await this.verifyEmailAttemptRepository.findByCode(code);
+        if (!verifyEmailAttempt) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_VERIFY_EMAIL_CODE_NOT_FOUND,
+                "Código de verificação não encontrado com o código informado: " + code,
+                [{ name: "code", reason: "O código de verificação deve ser válido" }]
+            );
+        }
+
+        if (verifyEmailAttempt.success) {
+            throw new CustomError(
+                EStatusCode.BAD_REQUEST,
+                EUserException.USER_VERIFY_EMAIL_CODE_ALREADY_USED,
+                "O código de verificação já foi usado",
+                [{ name: "code", reason: "O código de verificação deve ser usado uma vez" }]
+            );
+        }
+
+        await this.verifyEmailAttemptRepository.update(verifyEmailAttempt.id, {
+            success: true,
+            verifiedAt: new Date(),
+        });
+
+        const user = await this.userRepository.findById(verifyEmailAttempt.userId);
+        if (!user) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + verifyEmailAttempt.userId
+            );
+        }
+
+        await this.userRepository.update(user.id, { isEmailVerified: true });
+
+        return;
     }
 }

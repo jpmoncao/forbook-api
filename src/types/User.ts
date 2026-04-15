@@ -22,3 +22,18 @@ export function toUserPublic(user: User): UserPublic {
     const { password: _, profileImageId: __, ...publicUser } = user;
     return publicUser;
 }
+
+export type UserLogin = {
+    userId: string;
+    isEmailVerified: boolean;
+    isReceiveTwoFactorAuthEmail: boolean;
+}
+
+export type UserTokens = {
+    accessToken: string;
+    refreshToken: string;
+};
+
+export function isUserTokens(value: UserLogin | UserTokens): value is UserTokens {
+    return "accessToken" in value && "refreshToken" in value;
+}
