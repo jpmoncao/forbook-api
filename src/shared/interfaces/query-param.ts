@@ -2,5 +2,5 @@ export interface IQueryParams {
     filter: Record<string, any>;
     page: number;
     limit: number;
-    sort: Record<string, any>;
+    sort: Record<string, 'desc' | 'asc'>;
 }
