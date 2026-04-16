@@ -44,4 +44,12 @@ export default class UserRepository extends AbstractRepository<
             },
         });
     }
+
+    findUsersOrderId = async (): Promise<User[]> => {
+        return this.getAll({
+            orderBy: {
+                id: "desc"
+            },
+        });
+    }
 }

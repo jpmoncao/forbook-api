@@ -8,7 +8,6 @@ import { EStatusCode } from "@/errors/enums/status-code";
 import { toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclude } from "@/types/User";
 import MailService from "@/services/mail.service";
 import VerifyEmailAttemptRepository from "@/repositories/verifyEmailAttempt.repository";
-import { User } from "@/generated/prisma/client";
 
 export default class UserService {
     private readonly repository: UserRepository;
@@ -146,6 +145,20 @@ export default class UserService {
         if(!users) {
             throw new CustomError(
                 EStatusCode.NO_CONTENT,
+                EUserException.USER_NOT_FOUND,
+                "Usuarios não encontrados"
+            )
+        };
+
+        return users.map(user => toUserPublic(user));
+    }
+
+    getUsersOrderId = async (): Promise<UserPublic[]> => {
+        const users = await this.repository.findUsersOrderId();
+
+        if(!users) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
                 EUserException.USER_NOT_FOUND,
                 "Usuarios não encontrados"
             )

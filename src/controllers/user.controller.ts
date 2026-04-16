@@ -71,4 +71,13 @@ export default class UserController {
             data: users
         });
     }
+
+    getUsersOrderId = async(req: Request, res: Response) => {
+        const users = await this.service.getUsersOrderId();
+
+        res.status(200).json({
+            message: "Usuários listados com sucesso",
+            data: users
+        });
+    }
 }
