@@ -62,4 +62,13 @@ export default class UserController {
             data: user,
         });
     }
+
+    getUsers = async (_req: Request, res: Response) => {
+        const users = await this.service.getUsers();
+
+        res.status(200).json({
+            message: "Usuários listados com sucesso",
+            data: users
+        });
+    }
 }
