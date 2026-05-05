@@ -10,6 +10,7 @@ import authRouter from "@/routers/auth.router";
 import imageRouter from "@/routers/image.router";
 import userBookRouter from "@/routers/userBook.router";
 import catalogBookRouter from "@/routers/catalogBook.router";
+import ratingRouter from "@/routers/rating.router";
 
 import { errorHandler } from "@/middlewares/error-handler";
 
@@ -39,6 +40,7 @@ app.use("/auth", authRouter);
 app.use("/images", imageRouter);
 app.use("/user-books", userBookRouter);
 app.use("/catalog-books", catalogBookRouter);
+app.use("/ratings", ratingRouter);
 
 app.use(errorHandler);
 
