@@ -1,5 +1,5 @@
 import prisma from "@/config/prisma";
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { DEFAULT_QUERY_LIMIT, DEFAULT_QUERY_PAGE } from "@/utils/query-param";
 
 export type RepositoryPagination = {
@@ -61,7 +61,7 @@ export default abstract class AbstractRepository<
         return (this.client as PrismaModelClient)[this.modelKey];
     }
 
-    async getAll(args?: unknown, pagination?: RepositoryPagination): Promise<TEntity[]> {
+    async getAll(args?: Prisma.Args<typeof this.database, "findMany">, pagination?: RepositoryPagination): Promise<TEntity[]> {
         const prismaArgs =
             args !== null && args !== undefined && typeof args === "object" && !Array.isArray(args)
                 ? { ...(args as Record<string, unknown>) }
@@ -82,6 +82,15 @@ export default abstract class AbstractRepository<
 
     async getById(id: string): Promise<TEntity | null> {
         return this.database.findUnique({ where: { id } });
+    }
+
+    async getByIdWithInclude(id: string, include: Prisma.Args<typeof this.database, "findUnique">): Promise<TEntity | null> {
+        return this.database.findUnique({
+            where: { id },
+            include: {
+                [include]: true,
+            }
+        });
     }
 
     async create(data: TCreateData): Promise<TEntity> {
