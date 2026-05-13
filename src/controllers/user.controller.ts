@@ -4,6 +4,7 @@ import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
 import { EUserException } from "@/errors/enums/user";
+import parseQueryParams from "@/utils/query-param";
 
 export default class UserController {
     private readonly service: UserService;
@@ -60,6 +61,18 @@ export default class UserController {
         res.status(200).json({
             message: "Usuário atualizado com sucesso",
             data: user,
+        });
+    }
+
+    getAllUsers = async (req: Request, res: Response) => {
+        const queryParams = parseQueryParams(req.query);
+
+        const { data: users, meta } = await this.service.getAllUsers(queryParams);
+
+        res.status(200).json({
+            message: "Usuários listados com sucesso",
+            data: users,
+            meta,
         });
     }
 }
