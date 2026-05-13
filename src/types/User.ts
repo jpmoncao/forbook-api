@@ -6,6 +6,7 @@ const fieldsToExclude = ["password", "profileImageId"] as const;
 export type UserWithInclude = UserGetPayload<{
     include: {
         ProfileImage: true;
+        Address: true;
     };
 }>;
 

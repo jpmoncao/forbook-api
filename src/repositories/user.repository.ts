@@ -33,7 +33,7 @@ export default class UserRepository extends AbstractRepository<
         return this.database.update({
             where: { id },
             data,
-            include: { ProfileImage: true },
+            include: { ProfileImage: true, Address: true },
         });
     }
 }
