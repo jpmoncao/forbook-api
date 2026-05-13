@@ -24,7 +24,7 @@ export default class UserController {
         });
     }
 
-    getUser = async (req: Request, res: Response) => {
+    getUserMe = async (req: Request, res: Response) => {
         const userId = req.userId;
         if (!userId) {
             throw new CustomError(
@@ -38,7 +38,18 @@ export default class UserController {
         const user = await this.service.getMe(userId);
 
         res.status(200).json({
-            message: "Usuário obtido com sucesso",
+            message: "Usuário encontrado com sucesso",
+            data: user,
+        });
+    }
+
+    getUserById = async (req: Request, res: Response) => {
+        const userId = req.params.id as string;
+
+        const user = await this.service.getUserById(userId);
+
+        res.status(200).json({
+            message: "Usuário encontrado com sucesso",
             data: user,
         });
     }

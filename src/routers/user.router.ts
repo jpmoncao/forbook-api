@@ -7,10 +7,10 @@ import { validateToken } from "@/middlewares/validate-token";
 const userRouter = Router();
 const controller = new UserController();
 
-userRouter.post("/", validateBody(userCreateBodySchema), controller.createUser);
-
-userRouter.get("/me", validateToken, controller.getUser);
-userRouter.put("/me", validateToken, validateBody(userUpdateBodySchema), controller.updateUser);
+userRouter.get("/me", validateToken, controller.getUserMe);
+userRouter.get("/:id", validateToken, controller.getUserById);
 userRouter.get("/", validateToken, controller.getAllUsers);
+userRouter.post("/", validateBody(userCreateBodySchema), controller.createUser);
+userRouter.put("/me", validateToken, validateBody(userUpdateBodySchema), controller.updateUser);
 
 export default userRouter;
