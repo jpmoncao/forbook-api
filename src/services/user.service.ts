@@ -103,7 +103,21 @@ export default class UserService {
     }
 
     getMe = async (userId: string): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true });
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Ratings: true });
+        if (!user) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + userId,
+                [{ name: "userId", reason: "O ID do usuário deve ser válido" }]
+            );
+        }
+
+        return toUserPublicWithInclude(user);
+    }
+
+    getUserById = async (userId: string): Promise<UserPublicWithInclude> => {
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Ratings: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
