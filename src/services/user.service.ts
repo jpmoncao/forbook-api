@@ -1,5 +1,5 @@
 import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
-import { UserCreateInput, UserUpdateInput } from "@/generated/prisma/models"
+import { UserCreateInput, UserUpdateInput, UserWhereInput } from "@/generated/prisma/models"
 import UserRepository from "@/repositories/user.repository";
 import Hash from "@/utils/hash";
 import { EUserException } from "@/errors/enums/user";
@@ -9,6 +9,9 @@ import { toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclud
 import MailService from "@/services/mail.service";
 import VerifyEmailAttemptRepository from "@/repositories/verifyEmailAttempt.repository";
 import { User } from "@/generated/prisma/client";
+import { IPaginated } from "@/shared/interfaces/paginated";
+import { IQueryParams } from "@/shared/interfaces/query-param";
+import { buildPaginationMeta } from "@/shared/repository";
 
 export default class UserService {
     private readonly repository: UserRepository;
@@ -140,17 +143,18 @@ export default class UserService {
         return toUserPublicWithInclude(updatedUser);
     }
 
-    getUsers = async (): Promise<UserPublic[]> => {
-        const users = await this.repository.findUsers();
+    getAllUsers = async (query: IQueryParams): Promise<IPaginated<UserPublic>> => {
+        const pagination = { page: query.page, limit: query.limit };
+        const filter = query.filter as UserWhereInput;
 
-        if(!users) {
-            throw new CustomError(
-                EStatusCode.NO_CONTENT,
-                EUserException.USER_NOT_FOUND,
-                "Usuarios não encontrados"
-            )
+        const [users, total] = await Promise.all([
+            this.repository.getAll(filter, pagination) as Promise<User[]>,
+            this.repository.countWhere(filter),
+        ]);
+
+        return {
+            data: users.map(user => toUserPublic(user)),
+            meta: buildPaginationMeta(total, pagination),
         };
-
-        return users.map(user => toUserPublic(user));
     }
 }

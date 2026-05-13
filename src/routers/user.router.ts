@@ -11,6 +11,6 @@ userRouter.post("/", validateBody(userCreateBodySchema), controller.createUser);
 
 userRouter.get("/me", validateToken, controller.getUser);
 userRouter.put("/me", validateToken, validateBody(userUpdateBodySchema), controller.updateUser);
-userRouter.get("/all", validateToken, controller.getUsers);
+userRouter.get("/", validateToken, controller.getAllUsers);
 
 export default userRouter;
