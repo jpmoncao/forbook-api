@@ -103,7 +103,7 @@ export default class UserService {
     }
 
     getMe = async (userId: string): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Ratings: true });
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Address: true, Ratings: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -131,7 +131,7 @@ export default class UserService {
     }
 
     updateUser = async (userId: string, body: UserUpdateBody): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findById(userId);
+        const user = await this.repository.findByIdWithInclude(userId, { Address: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -141,8 +141,35 @@ export default class UserService {
             );
         }
 
+        if (body.email) {
+            const existingUserEmail = await this.repository.findByEmail(body.email);
+            if (existingUserEmail && existingUserEmail.id !== userId) {
+                throw new CustomError(
+                    EStatusCode.CONFLICT,
+                    EUserException.USER_EMAIL_ALREADY_EXISTS,
+                    "O email informado já está em uso: " + body.email,
+                    [{ name: "email", reason: "O email deve ser único" }]
+                );
+            }
+        }
+
+        if (body.phoneNumber) {
+            const existingUserPhoneNumber = await this.repository.findByPhoneNumber(body.phoneNumber);
+            if (existingUserPhoneNumber && existingUserPhoneNumber.id !== userId) {
+                throw new CustomError(
+                    EStatusCode.CONFLICT,
+                    EUserException.USER_PHONE_NUMBER_ALREADY_EXISTS,
+                    "O número de telefone informado já está em uso: " + body.phoneNumber,
+                    [{ name: "phoneNumber", reason: "O número de telefone deve ser único" }]
+                );
+            }
+        }
+
         const userUpdateInput: UserUpdateInput = {
             ...(body.name !== undefined && { name: body.name }),
+            ...(body.email !== undefined && { email: body.email }),
+            ...(body.phoneNumber !== undefined && { phoneNumber: body.phoneNumber }),
+            ...(body.birthDate !== undefined && { birthDate: body.birthDate }),
             ...(body.isReceiveTwoFactorAuthEmail !== undefined && { isReceiveTwoFactorAuthEmail: body.isReceiveTwoFactorAuthEmail }),
             ...(body.profileImageId !== undefined && {
                 ProfileImage: {
@@ -150,6 +177,24 @@ export default class UserService {
                         id: body.profileImageId,
                     },
                 },
+            }),
+            ...(body.address !== undefined && {
+                Address: user.Address?.length
+                    ? {
+                        update: {
+                            where: { id: user.Address[0]!.id },
+                            data: {
+                                ...body.address,
+                                complement: body.address.complement || "",
+                            },
+                        },
+                    }
+                    : {
+                        create: {
+                            ...body.address,
+                            complement: body.address.complement || "",
+                        },
+                    },
             }),
         }
 

@@ -7,6 +7,7 @@ export type UserWithInclude = UserGetPayload<{
     include: {
         ProfileImage: true;
         Ratings: true;
+        Address: true;
     };
 }>;
 
