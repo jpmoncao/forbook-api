@@ -56,7 +56,13 @@ export const userBookQueryArgs = {
     include: userBookInclude,
 } as const;
 
-export type UserBookWithInclude = UserBookGetPayload<{
+export type UserBookPayload = UserBookGetPayload<{
     omit: typeof userBookOmit;
     include: typeof userBookInclude;
 }>;
+
+export type UserBookWithInclude = Omit<UserBookPayload, "CatalogBook"> & {
+    CatalogBook: UserBookPayload["CatalogBook"] & {
+        isWishedByCurrentUser: boolean;
+    };
+};

@@ -1,12 +1,13 @@
 import type { UserBookCreateWithUserIdBody, UserBookUpdateWithUserIdBody } from "@/schemas/userBook.schema";
 import { UserBookCreateInput, UserBookUpdateInput, UserBookWhereInput } from "@/generated/prisma/models";
 import UserBookRepository from "@/repositories/userBook.repository";
+import WishlistRepository from "@/repositories/wishlist.repository";
 import { EUserBookException } from "@/errors/enums/userBook";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
 import UserRepository from "@/repositories/user.repository";
 import { EUserException } from "@/errors/enums/user";
-import { UserBookWithInclude } from "@/types/UserBook";
+import type { UserBookPayload, UserBookWithInclude } from "@/types/UserBook";
 import { IQueryParams } from "@/shared/interfaces/query-param";
 import { buildPaginationMeta } from "@/shared/repository";
 import { IPaginated } from "@/shared/interfaces/paginated";
@@ -14,10 +15,44 @@ import { IPaginated } from "@/shared/interfaces/paginated";
 export default class UserBookService {
     private readonly repository: UserBookRepository;
     private readonly userRepository: UserRepository;
+    private readonly wishlistRepository: WishlistRepository;
 
     constructor() {
         this.repository = new UserBookRepository();
         this.userRepository = new UserRepository();
+        this.wishlistRepository = new WishlistRepository();
+    }
+
+    private async withWishStatusForViewer(
+        userBook: UserBookPayload,
+        viewerUserId: string,
+    ): Promise<UserBookWithInclude> {
+        const isWishedByCurrentUser = await this.wishlistRepository.catalogBookIsWishlisted(
+            viewerUserId,
+            userBook.CatalogBook.id,
+        );
+        return {
+            ...userBook,
+            CatalogBook: {
+                ...userBook.CatalogBook,
+                isWishedByCurrentUser,
+            },
+        };
+    }
+
+    private async withWishStatusForViewerMany(
+        userBooks: UserBookPayload[],
+        viewerUserId: string,
+    ): Promise<UserBookWithInclude[]> {
+        const wishlistedCatalogIds = await this.wishlistRepository.getCatalogBookIdsByUserId(viewerUserId);
+        const set = new Set(wishlistedCatalogIds);
+        return userBooks.map((ub) => ({
+            ...ub,
+            CatalogBook: {
+                ...ub.CatalogBook,
+                isWishedByCurrentUser: set.has(ub.CatalogBook.id),
+            },
+        }));
     }
 
     createUserBook = async (body: UserBookCreateWithUserIdBody): Promise<UserBookWithInclude> => {
@@ -69,8 +104,8 @@ export default class UserBookService {
             }),
         };
 
-        const userBook = await this.repository.create(userBookCreateInput) as UserBookWithInclude;
-        return userBook;
+        const userBook = await this.repository.create(userBookCreateInput);
+        return this.withWishStatusForViewer(userBook, body.userId);
     }
 
     updateUserBook = async (userBookId: string, body: UserBookUpdateWithUserIdBody): Promise<UserBookWithInclude> => {
@@ -117,12 +152,12 @@ export default class UserBookService {
             }),
         };
 
-        const updatedUserBook = await this.repository.update(userBookId, userBookUpdateInput) as UserBookWithInclude;
-        return updatedUserBook;
+        const updatedUserBook = await this.repository.update(userBookId, userBookUpdateInput);
+        return this.withWishStatusForViewer(updatedUserBook, body.userId);
     }
 
-    getUserBookById = async (userBookId: string): Promise<UserBookWithInclude> => {
-        const userBook = await this.repository.getById(userBookId) as UserBookWithInclude;
+    getUserBookById = async (userBookId: string, viewerUserId: string): Promise<UserBookWithInclude> => {
+        const userBook = await this.repository.getById(userBookId);
         if (!userBook) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -131,20 +166,25 @@ export default class UserBookService {
                 [{ name: "userBookId", reason: "O ID do livro deve ser válido" }]
             );
         }
-        return userBook;
+        return this.withWishStatusForViewer(userBook, viewerUserId);
     }
 
-    getAllUserBooks = async (query: IQueryParams): Promise<IPaginated<UserBookWithInclude>> => {
+    getAllUserBooks = async (
+        query: IQueryParams,
+        viewerUserId: string,
+    ): Promise<IPaginated<UserBookWithInclude>> => {
         const pagination = { page: query.page, limit: query.limit };
         const filter = query.filter as UserBookWhereInput;
 
         const [userBooks, total] = await Promise.all([
-            this.repository.getAll(filter, pagination) as Promise<UserBookWithInclude[]>,
+            this.repository.getAll(filter, pagination),
             this.repository.countWhere(filter),
         ]);
 
+        const data = await this.withWishStatusForViewerMany(userBooks, viewerUserId);
+
         return {
-            data: userBooks,
+            data,
             meta: buildPaginationMeta(total, pagination),
         };
     }

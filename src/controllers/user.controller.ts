@@ -86,4 +86,59 @@ export default class UserController {
             meta,
         });
     }
+
+    getUserWishlist = async (req: Request, res: Response) => {
+        const userId = req.params.id as string;
+
+        const wishlist = await this.service.getUserWishlist(userId);
+
+        res.status(200).json({
+            message: "Lista de desejos do usuário encontrado com sucesso",
+            data: wishlist,
+        });
+    }
+
+    addBookToWishlist = async (req: Request, res: Response) => {
+        const currentUserId = req.userId;
+        const userId = req.params.id as string;
+        const bookId = req.params.bookId as string;
+
+        if (userId !== currentUserId) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Você não tem permissão para adicionar livros à lista de desejos de outro usuário",
+                [{ name: "userId", reason: "Você não tem permissão para adicionar livros à lista de desejos de outro usuário" }]
+            );
+        }
+
+        const wishlist = await this.service.addBookToWishlist(userId, bookId);
+
+        res.status(200).json({
+            message: "Livro adicionado à lista de desejos com sucesso",
+            data: wishlist,
+        });
+    }
+
+    removeBookFromWishlist = async (req: Request, res: Response) => {
+        const currentUserId = req.userId;
+        const userId = req.params.id as string;
+        const bookId = req.params.bookId as string;
+
+        if (userId !== currentUserId) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Você não tem permissão para remover livros da lista de desejos de outro usuário",
+                [{ name: "userId", reason: "Você não tem permissão para remover livros da lista de desejos de outro usuário" }]
+            );
+        }
+
+        const wishlist = await this.service.removeBookFromWishlist(userId, bookId);
+
+        res.status(200).json({
+            message: "Livro removido da lista de desejos com sucesso",
+            data: wishlist,
+        });
+    }
 }
