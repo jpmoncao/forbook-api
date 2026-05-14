@@ -18,5 +18,29 @@ export default class WishlistRepository extends AbstractRepository<
                 CatalogBooks: true,
             },
         });
-    }
+    };
+
+    getCatalogBookIdsByUserId = async (userId: string): Promise<string[]> => {
+        const row = await this.database.findUnique({
+            where: { userId },
+            select: {
+                CatalogBooks: { select: { id: true } },
+            },
+        });
+        return row?.CatalogBooks.map((b: { id: string }) => b.id) ?? [];
+    };
+
+    catalogBookIsWishlisted = async (userId: string, catalogBookId: string): Promise<boolean> => {
+        const row = await this.database.findUnique({
+            where: { userId },
+            select: {
+                CatalogBooks: {
+                    where: { id: catalogBookId },
+                    select: { id: true },
+                    take: 1,
+                },
+            },
+        });
+        return (row?.CatalogBooks.length ?? 0) > 0;
+    };
 }

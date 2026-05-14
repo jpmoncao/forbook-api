@@ -42,8 +42,9 @@ export default class UserBookController {
 
     getUserBookById = async (req: Request, res: Response) => {
         const userBookId = req.params.id as string;
+        const userId = req.userId as string;
 
-        const userBook = await this.service.getUserBookById(userBookId);
+        const userBook = await this.service.getUserBookById(userBookId, userId);
 
         res.status(200).json({
             message: "Anúncio de livro encontrado com sucesso",
@@ -100,7 +101,7 @@ export default class UserBookController {
             isPrivate: false,
         }
 
-        const { data: userBooks, meta } = await this.service.getAllUserBooks(queryParams);
+        const { data: userBooks, meta } = await this.service.getAllUserBooks(queryParams, userId);
 
         res.status(200).json({
             message: "Anúncios de livros encontrados com sucesso",
@@ -120,7 +121,7 @@ export default class UserBookController {
             isPrivate: false,
         }
 
-        const { data: userBooks, meta } = await this.service.getAllUserBooks(queryParams);
+        const { data: userBooks, meta } = await this.service.getAllUserBooks(queryParams, userId);
 
         res.status(200).json({
             message: "Meus anúncios de livros encontrados com sucesso",
