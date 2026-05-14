@@ -1,5 +1,5 @@
 import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
-import { UserCreateInput, UserUpdateInput } from "@/generated/prisma/models"
+import { UserCreateInput, UserUpdateInput, UserWhereInput } from "@/generated/prisma/models"
 import UserRepository from "@/repositories/user.repository";
 import Hash from "@/utils/hash";
 import { EUserException } from "@/errors/enums/user";
@@ -8,6 +8,10 @@ import { EStatusCode } from "@/errors/enums/status-code";
 import { toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclude } from "@/types/User";
 import MailService from "@/services/mail.service";
 import VerifyEmailAttemptRepository from "@/repositories/verifyEmailAttempt.repository";
+import { User } from "@/generated/prisma/client";
+import { IPaginated } from "@/shared/interfaces/paginated";
+import { IQueryParams } from "@/shared/interfaces/query-param";
+import { buildPaginationMeta } from "@/shared/repository";
 
 export default class UserService {
     private readonly repository: UserRepository;
@@ -99,7 +103,21 @@ export default class UserService {
     }
 
     getMe = async (userId: string): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Address: true });
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Address: true, Ratings: true });
+        if (!user) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + userId,
+                [{ name: "userId", reason: "O ID do usuário deve ser válido" }]
+            );
+        }
+
+        return toUserPublicWithInclude(user);
+    }
+
+    getUserById = async (userId: string): Promise<UserPublicWithInclude> => {
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Ratings: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -182,5 +200,20 @@ export default class UserService {
 
         const updatedUser = await this.repository.update(userId, userUpdateInput);
         return toUserPublicWithInclude(updatedUser);
+    }
+
+    getAllUsers = async (query: IQueryParams): Promise<IPaginated<UserPublic>> => {
+        const pagination = { page: query.page, limit: query.limit };
+        const filter = query.filter as UserWhereInput;
+
+        const [users, total] = await Promise.all([
+            this.repository.getAll(filter, pagination) as Promise<User[]>,
+            this.repository.countWhere(filter),
+        ]);
+
+        return {
+            data: users.map(user => toUserPublic(user)),
+            meta: buildPaginationMeta(total, pagination),
+        };
     }
 }

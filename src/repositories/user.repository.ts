@@ -36,4 +36,12 @@ export default class UserRepository extends AbstractRepository<
             include: { ProfileImage: true, Address: true },
         });
     }
+
+    findUsers = async (): Promise<User[]> => {
+        return this.getAll({
+            orderBy: {
+                name: "desc"
+            },
+        });
+    }
 }
