@@ -18,7 +18,7 @@ export default class CatalogBookController {
         const catalogBook = await this.service.createCatalogBook(CatalogBookCreateDTO);
 
         res.status(201).json({
-            message: "Catalog Book criado com sucesso!",
+            message: "Livro criado com sucesso!",
             data: catalogBook
         });
     }
@@ -44,7 +44,7 @@ export default class CatalogBookController {
         }
 
         res.status(200).json({
-            message: "Catalog Book encontrado",
+            message: "Livro encontrado",
             data: catalogBook
         });
     }
@@ -72,7 +72,7 @@ export default class CatalogBookController {
         }
 
         res.status(200).json({
-            message: "CatalogBook alterado com sucesso",
+            message: "Livro alterado com sucesso",
             data: catalogBook
         });
     }
