@@ -8,20 +8,29 @@ import { EStatusCode } from "@/errors/enums/status-code";
 import { toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclude } from "@/types/User";
 import MailService from "@/services/mail.service";
 import VerifyEmailAttemptRepository from "@/repositories/verifyEmailAttempt.repository";
-import { User } from "@/generated/prisma/client";
+import { User, Wishlist } from "@/generated/prisma/client";
 import { IPaginated } from "@/shared/interfaces/paginated";
 import { IQueryParams } from "@/shared/interfaces/query-param";
 import { buildPaginationMeta } from "@/shared/repository";
+import WishlistRepository from "@/repositories/wishlist.repository";
+import { EWishlistException } from "@/errors/enums/wishlist";
+import { WishlistWithInclude } from "@/types/Wishlist";
+import CatalogBookRepository from "@/repositories/catalogBook.repository";
+import { ECatalogBookException } from "@/errors/enums/catalogBook";
 
 export default class UserService {
     private readonly repository: UserRepository;
     private readonly verifyEmailAttemptRepository: VerifyEmailAttemptRepository;
     private readonly mailService: MailService;
+    private readonly wishlistRepository: WishlistRepository;
+    private readonly catalogBookRepository: CatalogBookRepository;
 
     constructor() {
         this.repository = new UserRepository();
         this.verifyEmailAttemptRepository = new VerifyEmailAttemptRepository();
         this.mailService = new MailService();
+        this.wishlistRepository = new WishlistRepository();
+        this.catalogBookRepository = new CatalogBookRepository();
     }
 
     createUser = async (body: UserCreateBody): Promise<UserPublic> => {
@@ -170,5 +179,116 @@ export default class UserService {
             data: users.map(user => toUserPublic(user)),
             meta: buildPaginationMeta(total, pagination),
         };
+    }
+
+    getUserWishlist = async (userId: string): Promise<WishlistWithInclude> => {
+        const wishlist = await this.wishlistRepository.findByUserId(userId);
+        if (!wishlist) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EWishlistException.WISHLIST_NOT_FOUND,
+                "Lista de desejos não encontrada para o usuário: " + userId,
+            );
+        }
+
+        return wishlist;
+    }
+
+    addBookToWishlist = async (userId: string, bookId: string): Promise<WishlistWithInclude> => {
+        const wishlist = await this.wishlistRepository.findByUserId(userId);
+        if (!wishlist) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EWishlistException.WISHLIST_NOT_FOUND,
+                "Lista de desejos não encontrada para o usuário: " + userId,
+            );
+        }
+
+        const book = await this.catalogBookRepository.findById(bookId);
+        if (!book) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                ECatalogBookException.CATALOG_BOOK_NOT_FOUND,
+                "Livro não encontrado com o ID informado: " + bookId,
+            );
+        }
+
+        const isBookInWishlist = wishlist.CatalogBooks.some(b => b.id === bookId);
+        if (isBookInWishlist) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EWishlistException.WISHLIST_BOOK_ALREADY_IN_WISHLIST,
+                "Livro já está na lista de desejos para o usuário: " + userId,
+                [{ name: "bookId", reason: `O livro \"${book.title}\" já está na lista de desejos para o usuário ${userId}` }]
+            );
+        }
+
+        await this.wishlistRepository.update(wishlist.id, {
+            CatalogBooks: {
+                connect: {
+                    id: bookId,
+                },
+            },
+        });
+
+        const updatedWishlist = await this.wishlistRepository.findByUserId(userId);
+        if (!updatedWishlist) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EWishlistException.WISHLIST_NOT_FOUND,
+                "Lista de desejos não encontrada para o usuário: " + userId,
+            );
+        }
+
+        return updatedWishlist;
+    }
+
+    removeBookFromWishlist = async (userId: string, bookId: string): Promise<WishlistWithInclude> => {
+        const wishlist = await this.wishlistRepository.findByUserId(userId);
+        if (!wishlist) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EWishlistException.WISHLIST_NOT_FOUND,
+                "Lista de desejos não encontrada para o usuário: " + userId,
+            );
+        }
+
+        const book = await this.catalogBookRepository.findById(bookId);
+        if (!book) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                ECatalogBookException.CATALOG_BOOK_NOT_FOUND,
+                "Livro não encontrado com o ID informado: " + bookId,
+            );
+        }
+
+        const isBookInWishlist = wishlist.CatalogBooks.some(b => b.id === bookId);
+        if (!isBookInWishlist) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EWishlistException.WISHLIST_BOOK_NOT_FOUND,
+                "Livro não encontrado na lista de desejos para o usuário: " + userId,
+                [{ name: "bookId", reason: `O livro \"${book.title}\" não está na lista de desejos para o usuário ${userId}` }]
+            );
+        }
+
+        await this.wishlistRepository.update(wishlist.id, {
+            CatalogBooks: {
+                disconnect: {
+                    id: bookId,
+                },
+            },
+        });
+
+        const updatedWishlist = await this.wishlistRepository.findByUserId(userId);
+        if (!updatedWishlist) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EWishlistException.WISHLIST_NOT_FOUND,
+                "Lista de desejos não encontrada para o usuário: " + userId,
+            );
+        }
+
+        return updatedWishlist;
     }
 }

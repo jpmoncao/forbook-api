@@ -11,6 +11,7 @@ import Jwt from "@/utils/jwt";
 import { ConfirmLoginBody, LoginBody } from "@/schemas/auth.schema";
 import { UserLogin, UserTokens } from "@/types/User";
 import VerifyEmailAttemptRepository from "@/repositories/verifyEmailAttempt.repository";
+import WishlistRepository from "@/repositories/wishlist.repository";
 
 export default class AuthService {
     static readonly EXPIRATION_TIME = 1000 * 60 * 10; // 10 minutes
@@ -19,12 +20,14 @@ export default class AuthService {
     private readonly loginAttemptRepository: LoginAttemptRepository;
     private readonly verifyEmailAttemptRepository: VerifyEmailAttemptRepository;
     private readonly mailService: MailService;
+    private readonly wishlistRepository: WishlistRepository;
 
     constructor() {
         this.userRepository = new UserRepository();
         this.loginAttemptRepository = new LoginAttemptRepository();
         this.verifyEmailAttemptRepository = new VerifyEmailAttemptRepository();
         this.mailService = new MailService();
+        this.wishlistRepository = new WishlistRepository();
     }
 
     login = async (body: LoginBody): Promise<UserLogin | UserTokens> => {
@@ -195,7 +198,20 @@ export default class AuthService {
             );
         }
 
+        // Verifica se o usuário já está verificado
         await this.userRepository.update(user.id, { isEmailVerified: true });
+
+        // Cria uma lista de desejos para o usuário se não existir
+        const wishlist = await this.wishlistRepository.findByUserId(user.id);
+        if (!wishlist) {
+            await this.wishlistRepository.create({
+                User: {
+                    connect: {
+                        id: user.id,
+                    },
+                },
+            });
+        }
 
         return;
     }

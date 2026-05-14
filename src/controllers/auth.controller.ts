@@ -62,6 +62,7 @@ export default class AuthController {
 
         try {
             await this.service.verifyEmailCode(code);
+
         } catch (err) {
             if (err instanceof CustomError) {
                 const html = buildVerifyEmailResultPage({
