@@ -39,7 +39,7 @@ model User {
 
   UserBooks          UserBook[]
   ProfileImage       Image?              @relation("UserProfileImage", fields: [profileImageId], references: [id])
-  Address            Address[]           @relation("UserAddress")
+  Addresses          Address[]           @relation("UserAddress")
   Ratings            Rating[]            @relation("UserRatedBy")
   RatedTo            Rating[]            @relation("UserRatedTo")
   Wishlist           Wishlist?

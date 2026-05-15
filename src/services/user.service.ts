@@ -73,7 +73,7 @@ export default class UserService {
             phoneNumber: body.phoneNumber,
             cpf: body.cpf,
             birthDate: body.birthDate,
-            Address: {
+            Addresses: {
                 create: {
                     street: body.address.street,
                     number: body.address.number,
@@ -112,7 +112,7 @@ export default class UserService {
     }
 
     getMe = async (userId: string): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Address: true, Ratings: true });
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Addresses: true, Ratings: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -140,7 +140,7 @@ export default class UserService {
     }
 
     updateUser = async (userId: string, body: UserUpdateBody): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findByIdWithInclude(userId, { Address: true });
+        const user = await this.repository.findByIdWithInclude(userId, { Addresses: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -186,24 +186,6 @@ export default class UserService {
                         id: body.profileImageId,
                     },
                 },
-            }),
-            ...(body.address !== undefined && {
-                Address: user.Address?.length
-                    ? {
-                        update: {
-                            where: { id: user.Address[0]!.id },
-                            data: {
-                                ...body.address,
-                                complement: body.address.complement || "",
-                            },
-                        },
-                    }
-                    : {
-                        create: {
-                            ...body.address,
-                            complement: body.address.complement || "",
-                        },
-                    },
             }),
         }
 
