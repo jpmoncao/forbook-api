@@ -13,6 +13,7 @@ userRouter.get("/:id", validateToken, controller.getUserById);
 userRouter.get("/", validateToken, controller.getAllUsers);
 
 userRouter.post("/:id/wishlist/:bookId", validateToken, controller.addBookToWishlist);
+userRouter.post("/:id/address", validateToken, controller.createAddress);
 userRouter.post("/", validateBody(userCreateBodySchema), controller.createUser);
 
 userRouter.put("/me", validateToken, validateBody(userUpdateBodySchema), controller.updateUser);

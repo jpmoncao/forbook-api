@@ -5,6 +5,7 @@ import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
 import { EUserException } from "@/errors/enums/user";
 import parseQueryParams from "@/utils/query-param";
+import { AddressCreateBody } from "@/schemas/address.schema";
 
 export default class UserController {
     private readonly service: UserService;
@@ -139,6 +140,28 @@ export default class UserController {
         res.status(200).json({
             message: "Livro removido da lista de desejos com sucesso",
             data: wishlist,
+        });
+    }
+
+    createAddress = async (req: Request, res: Response) => {
+        const currentUserId = req.userId;
+        const userId = req.params.id as string;
+        const addressCreateDTO = req.body as AddressCreateBody;
+
+        if (userId !== currentUserId) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Você não tem permissão para criar endereços para outro usuário",
+                [{ name: "userId", reason: "Você não tem permissão para criar endereços para outro usuário" }]
+            );
+        }
+
+        const address = await this.service.createAddress(userId, addressCreateDTO);
+
+        res.status(200).json({
+            message: "Endereço criado com sucesso",
+            data: address,
         });
     }
 }

@@ -1,5 +1,5 @@
 import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
-import { UserCreateInput, UserUpdateInput, UserWhereInput } from "@/generated/prisma/models"
+import { AddressCreateInput, UserCreateInput, UserUpdateInput, UserWhereInput } from "@/generated/prisma/models"
 import UserRepository from "@/repositories/user.repository";
 import Hash from "@/utils/hash";
 import { EUserException } from "@/errors/enums/user";
@@ -8,7 +8,7 @@ import { EStatusCode } from "@/errors/enums/status-code";
 import { toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclude } from "@/types/User";
 import MailService from "@/services/mail.service";
 import VerifyEmailAttemptRepository from "@/repositories/verifyEmailAttempt.repository";
-import { User, Wishlist } from "@/generated/prisma/client";
+import { Address, User, Wishlist } from "@/generated/prisma/client";
 import { IPaginated } from "@/shared/interfaces/paginated";
 import { IQueryParams } from "@/shared/interfaces/query-param";
 import { buildPaginationMeta } from "@/shared/repository";
@@ -17,6 +17,8 @@ import { EWishlistException } from "@/errors/enums/wishlist";
 import { WishlistWithInclude } from "@/types/Wishlist";
 import CatalogBookRepository from "@/repositories/catalogBook.repository";
 import { ECatalogBookException } from "@/errors/enums/catalogBook";
+import { AddressCreateBody } from "@/schemas/address.schema";
+import AddressRepository from "@/repositories/address.repository";
 
 export default class UserService {
     private readonly repository: UserRepository;
@@ -24,6 +26,7 @@ export default class UserService {
     private readonly mailService: MailService;
     private readonly wishlistRepository: WishlistRepository;
     private readonly catalogBookRepository: CatalogBookRepository;
+    private readonly addressRepository: AddressRepository;
 
     constructor() {
         this.repository = new UserRepository();
@@ -31,6 +34,7 @@ export default class UserService {
         this.mailService = new MailService();
         this.wishlistRepository = new WishlistRepository();
         this.catalogBookRepository = new CatalogBookRepository();
+        this.addressRepository = new AddressRepository();
     }
 
     createUser = async (body: UserCreateBody): Promise<UserPublic> => {
@@ -317,5 +321,34 @@ export default class UserService {
         }
 
         return updatedWishlist;
+    }
+
+    createAddress = async (userId: string, body: AddressCreateBody): Promise<Address> => {
+        const user = await this.repository.findByIdWithInclude(userId, { Addresses: true });
+        if (!user) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + userId,
+            );
+        }
+
+        const addressCreateInput: AddressCreateInput = {
+            street: body.street,
+            number: body.number,
+            neighborhood: body.neighborhood,
+            city: body.city,
+            state: body.state,
+            zipCode: body.zipCode,
+            complement: body.complement ?? "",
+            User: {
+                connect: {
+                    id: userId,
+                },
+            },
+        };
+
+        const address = await this.addressRepository.create(addressCreateInput);
+        return address;
     }
 }
