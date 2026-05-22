@@ -19,7 +19,30 @@ export const addressCreateSchema = z
             .string("CEP deve ser um texto")
             .trim()
             .regex(cepRegex, "CEP inválido (use 00000-000 ou 00000000)"),
+        makeDefault: z.boolean().optional(),
+    })
+    .strict();
+
+export const addressUpdateBodySchema = z
+    .object({
+        street: z.string("Rua deve ser um texto").trim().min(1, "Rua é obrigatória").optional(),
+        number: z.string("Número deve ser um texto").trim().min(1, "Número é obrigatório").optional(),
+        complement: z.string("Complemento deve ser um texto").nullable().optional(),
+        neighborhood: z.string("Bairro deve ser um texto").trim().min(1, "Bairro é obrigatório").optional(),
+        city: z.string("Cidade deve ser um texto").trim().min(1, "Cidade é obrigatória").optional(),
+        state: z
+            .string("Estado deve ser um texto")
+            .trim()
+            .transform((s) => s.toUpperCase())
+            .pipe(z.string().regex(ufRegex, "Estado deve ser a sigla com 2 letras (ex: SP)"))
+            .optional(),
+        zipCode: z
+            .string("CEP deve ser um texto")
+            .trim()
+            .regex(cepRegex, "CEP inválido (use 00000-000 ou 00000000)")
+            .optional(),
     })
     .strict();
 
 export type AddressCreateBody = z.infer<typeof addressCreateSchema>;
+export type AddressUpdateBody = z.infer<typeof addressUpdateBodySchema>;

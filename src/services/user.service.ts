@@ -1,14 +1,14 @@
 import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
-import { UserCreateInput, UserUpdateInput, UserWhereInput } from "@/generated/prisma/models"
+import { AddressCreateInput, AddressUpdateInput, UserCreateInput, UserUpdateInput, UserWhereInput } from "@/generated/prisma/models"
 import UserRepository from "@/repositories/user.repository";
 import Hash from "@/utils/hash";
 import { EUserException } from "@/errors/enums/user";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
-import { toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclude } from "@/types/User";
+import { AddressWithDefaultFlag, toUserPublic, toUserPublicWithInclude, UserPublic, UserPublicWithInclude } from "@/types/User";
 import MailService from "@/services/mail.service";
 import VerifyEmailAttemptRepository from "@/repositories/verifyEmailAttempt.repository";
-import { User, Wishlist } from "@/generated/prisma/client";
+import { Address, User, Wishlist } from "@/generated/prisma/client";
 import { IPaginated } from "@/shared/interfaces/paginated";
 import { IQueryParams } from "@/shared/interfaces/query-param";
 import { buildPaginationMeta } from "@/shared/repository";
@@ -17,6 +17,8 @@ import { EWishlistException } from "@/errors/enums/wishlist";
 import { WishlistWithInclude } from "@/types/Wishlist";
 import CatalogBookRepository from "@/repositories/catalogBook.repository";
 import { ECatalogBookException } from "@/errors/enums/catalogBook";
+import { AddressCreateBody, AddressUpdateBody } from "@/schemas/address.schema";
+import AddressRepository from "@/repositories/address.repository";
 
 export default class UserService {
     private readonly repository: UserRepository;
@@ -24,6 +26,7 @@ export default class UserService {
     private readonly mailService: MailService;
     private readonly wishlistRepository: WishlistRepository;
     private readonly catalogBookRepository: CatalogBookRepository;
+    private readonly addressRepository: AddressRepository;
 
     constructor() {
         this.repository = new UserRepository();
@@ -31,6 +34,7 @@ export default class UserService {
         this.mailService = new MailService();
         this.wishlistRepository = new WishlistRepository();
         this.catalogBookRepository = new CatalogBookRepository();
+        this.addressRepository = new AddressRepository();
     }
 
     createUser = async (body: UserCreateBody): Promise<UserPublic> => {
@@ -73,7 +77,7 @@ export default class UserService {
             phoneNumber: body.phoneNumber,
             cpf: body.cpf,
             birthDate: body.birthDate,
-            Address: {
+            Addresses: {
                 create: {
                     street: body.address.street,
                     number: body.address.number,
@@ -112,7 +116,7 @@ export default class UserService {
     }
 
     getMe = async (userId: string): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Address: true, Ratings: true });
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Addresses: true, Ratings: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -140,7 +144,7 @@ export default class UserService {
     }
 
     updateUser = async (userId: string, body: UserUpdateBody): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findByIdWithInclude(userId, { Address: true });
+        const user = await this.repository.findByIdWithInclude(userId, { Addresses: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -186,24 +190,6 @@ export default class UserService {
                         id: body.profileImageId,
                     },
                 },
-            }),
-            ...(body.address !== undefined && {
-                Address: user.Address?.length
-                    ? {
-                        update: {
-                            where: { id: user.Address[0]!.id },
-                            data: {
-                                ...body.address,
-                                complement: body.address.complement || "",
-                            },
-                        },
-                    }
-                    : {
-                        create: {
-                            ...body.address,
-                            complement: body.address.complement || "",
-                        },
-                    },
             }),
         }
 
@@ -335,5 +321,120 @@ export default class UserService {
         }
 
         return updatedWishlist;
+    }
+
+    private getAddressOwnedByUser = async (userId: string, addressId: string): Promise<Address> => {
+        const addressRecord = await this.addressRepository.getById(addressId);
+        if (!addressRecord || addressRecord.userId !== userId) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_ADDRESS_NOT_FOUND,
+                "Endereço não encontrado ou não pertence ao usuário: " + addressId,
+                [{ name: "addressId", reason: "O endereço deve existir e pertencer ao usuário autenticado" }]
+            );
+        }
+        return addressRecord;
+    }
+
+    createAddress = async (userId: string, body: AddressCreateBody): Promise<Address> => {
+        const user = await this.repository.findByIdWithInclude(userId, { Addresses: true });
+        if (!user) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + userId,
+            );
+        }
+
+        const addressCreateInput: AddressCreateInput = {
+            street: body.street,
+            number: body.number,
+            neighborhood: body.neighborhood,
+            city: body.city,
+            state: body.state,
+            zipCode: body.zipCode,
+            complement: body.complement ?? "",
+            User: {
+                connect: {
+                    id: userId,
+                },
+            },
+        };
+
+        const address = await this.addressRepository.create(addressCreateInput);
+
+        if (body.makeDefault) {
+            await this.repository.setDefaultAddressId(userId, address.id);
+        }
+
+        return address;
+    }
+
+    setDefaultAddress = async (userId: string, addressId: string): Promise<AddressWithDefaultFlag> => {
+        const addressRecord = await this.getAddressOwnedByUser(userId, addressId);
+
+        await this.repository.setDefaultAddressId(userId, addressId);
+
+        return { ...addressRecord, isDefault: true };
+    }
+
+    updateAddress = async (userId: string, addressId: string, body: AddressUpdateBody): Promise<AddressWithDefaultFlag> => {
+        await this.getAddressOwnedByUser(userId, addressId);
+
+        const user = await this.repository.findById(userId);
+        if (!user) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + userId,
+            );
+        }
+
+        const addressUpdateInput: AddressUpdateInput = {
+            ...(body.street !== undefined && { street: body.street }),
+            ...(body.number !== undefined && { number: body.number }),
+            ...(body.complement !== undefined && { complement: body.complement ?? "" }),
+            ...(body.neighborhood !== undefined && { neighborhood: body.neighborhood }),
+            ...(body.city !== undefined && { city: body.city }),
+            ...(body.state !== undefined && { state: body.state }),
+            ...(body.zipCode !== undefined && { zipCode: body.zipCode }),
+        };
+
+        const updatedAddress = await this.addressRepository.update(addressId, addressUpdateInput);
+
+        return {
+            ...updatedAddress,
+            isDefault: user.defaultAddressId === addressId,
+        };
+    }
+
+    deleteAddress = async (userId: string, addressId: string): Promise<void> => {
+        const user = await this.repository.findByIdWithInclude(userId, { Addresses: true });
+        if (!user) {
+            throw new CustomError(
+                EStatusCode.NOT_FOUND,
+                EUserException.USER_NOT_FOUND,
+                "Usuário não encontrado com o ID informado: " + userId,
+            );
+        }
+
+        await this.getAddressOwnedByUser(userId, addressId);
+
+        const addresses = user.Addresses ?? [];
+        if (addresses.length <= 1) {
+            throw new CustomError(
+                EStatusCode.CONFLICT,
+                EUserException.USER_CANNOT_DELETE_LAST_ADDRESS,
+                "O usuário deve manter pelo menos um endereço",
+                [{ name: "addressId", reason: "Não é possível remover o único endereço do usuário" }]
+            );
+        }
+
+        await this.repository.deleteAddressWithDefaultFallback(
+            userId,
+            addressId,
+            addresses,
+            user.defaultAddressId,
+        );
     }
 }

@@ -18,7 +18,7 @@ export const userBookInclude = {
             profileImageId: true,
         },
         include: {
-            Address: {
+            DefaultAddress: {
                 omit: {
                     createdAt: true,
                     updatedAt: true,
