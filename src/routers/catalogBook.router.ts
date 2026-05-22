@@ -1,14 +1,47 @@
 import CatalogBookController from "@/controllers/catalogBook.controller";
-import { validateBody } from "@/middlewares/validate-body";
-import { validateToken } from "@/middlewares/validate-token";
+import { createDocumentedRouter } from "@/docs/documented-router";
 import { catalogBookCreateBodySchema, catalogBookUpdateBodySchema } from "@/schemas/catalogBook.schema";
-import { Router } from "express";
+import { catalogBookResponseEnvelopeSchema } from "@/schemas/responses/entities.schema";
 
-const catalogBookRouter = Router();
+const catalogBookRoutes = createDocumentedRouter("/catalog-books");
 const controller = new CatalogBookController();
 
-catalogBookRouter.get("/:isbn", validateToken, controller.getCatalogBook);
-catalogBookRouter.post("/", validateToken, validateBody(catalogBookCreateBodySchema), controller.createCatalogBook);
-catalogBookRouter.put("/:isbn", validateToken, validateBody(catalogBookUpdateBodySchema), controller.updateCatalogBook);
+catalogBookRoutes.get(
+    "/:isbn",
+    {
+        summary: "Obter livro do catálogo por ISBN",
+        auth: true,
+        responses: {
+            200: catalogBookResponseEnvelopeSchema,
+        },
+    },
+    controller.getCatalogBook
+);
 
-export default catalogBookRouter;
+catalogBookRoutes.post(
+    "/",
+    {
+        summary: "Criar livro no catálogo",
+        auth: true,
+        body: catalogBookCreateBodySchema,
+        responses: {
+            201: catalogBookResponseEnvelopeSchema,
+        },
+    },
+    controller.createCatalogBook
+);
+
+catalogBookRoutes.put(
+    "/:isbn",
+    {
+        summary: "Atualizar livro do catálogo",
+        auth: true,
+        body: catalogBookUpdateBodySchema,
+        responses: {
+            200: catalogBookResponseEnvelopeSchema,
+        },
+    },
+    controller.updateCatalogBook
+);
+
+export default catalogBookRoutes.router;

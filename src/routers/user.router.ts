@@ -1,27 +1,164 @@
-import { Router } from "express";
 import UserController from "../controllers/user.controller";
-import { validateBody } from "@/middlewares/validate-body";
+import { createDocumentedRouter } from "@/docs/documented-router";
 import { addressCreateSchema, addressUpdateBodySchema } from "@/schemas/address.schema";
 import { userCreateBodySchema, userUpdateBodySchema } from "@/schemas/user.schema";
-import { validateToken } from "@/middlewares/validate-token";
+import {
+    addressResponseEnvelopeSchema,
+    createUserResponseSchema,
+    deleteMessageResponseSchema,
+    userResponseEnvelopeSchema,
+    usersListResponseSchema,
+    wishlistResponseSchema,
+} from "@/schemas/responses/entities.schema";
 
-const userRouter = Router();
+const userRoutes = createDocumentedRouter("/users");
 const controller = new UserController();
 
-userRouter.get("/me", validateToken, controller.getUserMe);
-userRouter.get("/:id/wishlist", validateToken, controller.getUserWishlist);
-userRouter.get("/:id", validateToken, controller.getUserById);
-userRouter.get("/", validateToken, controller.getAllUsers);
+userRoutes.get(
+    "/me",
+    {
+        summary: "Obter usuário autenticado",
+        auth: true,
+        responses: {
+            200: userResponseEnvelopeSchema,
+        },
+    },
+    controller.getUserMe
+);
 
-userRouter.post("/:id/wishlist/:bookId", validateToken, controller.addBookToWishlist);
-userRouter.post("/:id/address", validateToken, validateBody(addressCreateSchema), controller.createAddress);
-userRouter.patch("/:id/address/:addressId/default", validateToken, controller.setDefaultAddress);
-userRouter.put("/:id/address/:addressId", validateToken, validateBody(addressUpdateBodySchema), controller.updateAddress);
-userRouter.delete("/:id/address/:addressId", validateToken, controller.deleteAddress);
-userRouter.post("/", validateBody(userCreateBodySchema), controller.createUser);
+userRoutes.get(
+    "/:id/wishlist",
+    {
+        summary: "Listar lista de desejos",
+        auth: true,
+        responses: {
+            200: wishlistResponseSchema,
+        },
+    },
+    controller.getUserWishlist
+);
 
-userRouter.put("/me", validateToken, validateBody(userUpdateBodySchema), controller.updateUser);
+userRoutes.get(
+    "/:id",
+    {
+        summary: "Obter usuário por ID",
+        auth: true,
+        responses: {
+            200: userResponseEnvelopeSchema,
+        },
+    },
+    controller.getUserById
+);
 
-userRouter.delete("/:id/wishlist/:bookId", validateToken, controller.removeBookFromWishlist);
+userRoutes.get(
+    "/",
+    {
+        summary: "Listar usuários",
+        auth: true,
+        responses: {
+            200: usersListResponseSchema,
+        },
+    },
+    controller.getAllUsers
+);
 
-export default userRouter;
+userRoutes.post(
+    "/:id/wishlist/:bookId",
+    {
+        summary: "Adicionar livro à lista de desejos",
+        auth: true,
+        responses: {
+            200: wishlistResponseSchema,
+        },
+    },
+    controller.addBookToWishlist
+);
+
+userRoutes.post(
+    "/:id/address",
+    {
+        summary: "Criar endereço",
+        auth: true,
+        body: addressCreateSchema,
+        responses: {
+            200: addressResponseEnvelopeSchema,
+        },
+    },
+    controller.createAddress
+);
+
+userRoutes.patch(
+    "/:id/address/:addressId/default",
+    {
+        summary: "Definir endereço padrão",
+        auth: true,
+        responses: {
+            200: addressResponseEnvelopeSchema,
+        },
+    },
+    controller.setDefaultAddress
+);
+
+userRoutes.put(
+    "/:id/address/:addressId",
+    {
+        summary: "Atualizar endereço",
+        auth: true,
+        body: addressUpdateBodySchema,
+        responses: {
+            200: addressResponseEnvelopeSchema,
+        },
+    },
+    controller.updateAddress
+);
+
+userRoutes.delete(
+    "/:id/address/:addressId",
+    {
+        summary: "Remover endereço",
+        auth: true,
+        responses: {
+            200: deleteMessageResponseSchema,
+        },
+    },
+    controller.deleteAddress
+);
+
+userRoutes.post(
+    "/",
+    {
+        summary: "Criar usuário",
+        body: userCreateBodySchema,
+        responses: {
+            201: createUserResponseSchema,
+        },
+    },
+    controller.createUser
+);
+
+userRoutes.put(
+    "/me",
+    {
+        summary: "Atualizar usuário autenticado",
+        auth: true,
+        body: userUpdateBodySchema,
+        responses: {
+            200: userResponseEnvelopeSchema,
+        },
+    },
+    controller.updateUser
+);
+
+userRoutes.delete(
+    "/:id/wishlist/:bookId",
+    {
+        summary: "Remover livro da lista de desejos",
+        auth: true,
+        responses: {
+            200: wishlistResponseSchema,
+        },
+    },
+    controller.removeBookFromWishlist
+);
+
+export default userRoutes.router;

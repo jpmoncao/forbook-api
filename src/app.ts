@@ -1,7 +1,9 @@
 import "dotenv/config";
+import "@/docs/zod-openapi";
 
 import express, { json, Response } from "express";
 import cors from "cors";
+import { apiReference } from "@scalar/express-api-reference";
 
 import { connectPrisma, disconnectPrisma } from "@/config/prisma";
 
@@ -13,6 +15,8 @@ import catalogBookRouter from "@/routers/catalogBook.router";
 import ratingRouter from "@/routers/rating.router";
 
 import { errorHandler } from "@/middlewares/error-handler";
+import { generateOpenAPIDocument } from "@/docs/openapi";
+import "@/docs/system-routes";
 
 const PORT = 3002;
 const app = express();
@@ -34,6 +38,17 @@ app.use(cors());
 app.get("/health", (_, res: Response) => {
     res.status(200).json({ message: "Forbook API is running" });
 });
+
+app.get("/docs/openapi.json", (_, res) => {
+    res.json(generateOpenAPIDocument());
+});
+
+app.use(
+    "/docs",
+    apiReference({
+        url: "/docs/openapi.json",
+    })
+);
 
 app.use("/users", userRouter);
 app.use("/auth", authRouter);
