@@ -1,6 +1,7 @@
 import { Router } from "express";
 import UserController from "../controllers/user.controller";
 import { validateBody } from "@/middlewares/validate-body";
+import { addressCreateSchema, addressUpdateBodySchema } from "@/schemas/address.schema";
 import { userCreateBodySchema, userUpdateBodySchema } from "@/schemas/user.schema";
 import { validateToken } from "@/middlewares/validate-token";
 
@@ -13,7 +14,10 @@ userRouter.get("/:id", validateToken, controller.getUserById);
 userRouter.get("/", validateToken, controller.getAllUsers);
 
 userRouter.post("/:id/wishlist/:bookId", validateToken, controller.addBookToWishlist);
-userRouter.post("/:id/address", validateToken, controller.createAddress);
+userRouter.post("/:id/address", validateToken, validateBody(addressCreateSchema), controller.createAddress);
+userRouter.patch("/:id/address/:addressId/default", validateToken, controller.setDefaultAddress);
+userRouter.put("/:id/address/:addressId", validateToken, validateBody(addressUpdateBodySchema), controller.updateAddress);
+userRouter.delete("/:id/address/:addressId", validateToken, controller.deleteAddress);
 userRouter.post("/", validateBody(userCreateBodySchema), controller.createUser);
 
 userRouter.put("/me", validateToken, validateBody(userUpdateBodySchema), controller.updateUser);

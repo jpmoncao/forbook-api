@@ -33,6 +33,7 @@ model User {
   isEmailVerified             Boolean  @default(false)
   isReceiveTwoFactorAuthEmail Boolean  @default(false)
   profileImageId              String?  @unique
+  defaultAddressId            String?  @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -40,6 +41,7 @@ model User {
   UserBooks          UserBook[]
   ProfileImage       Image?              @relation("UserProfileImage", fields: [profileImageId], references: [id])
   Addresses          Address[]           @relation("UserAddress")
+  DefaultAddress     Address?            @relation("UserDefaultAddress", fields: [defaultAddressId], references: [id], onDelete: SetNull)
   Ratings            Rating[]            @relation("UserRatedBy")
   RatedTo            Rating[]            @relation("UserRatedTo")
   Wishlist           Wishlist?
@@ -151,7 +153,8 @@ model Address {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  User User @relation("UserAddress", fields: [userId], references: [id], onDelete: Cascade)
+  User       User @relation("UserAddress", fields: [userId], references: [id], onDelete: Cascade)
+  DefaultFor User? @relation("UserDefaultAddress")
 
   @@map("addresses")
 }

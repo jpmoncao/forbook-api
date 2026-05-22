@@ -16,4 +16,6 @@ export enum EUserException {
     USER_EMAIL_NOT_VERIFIED = "O e-mail do usuário não foi verificado",
     USER_VERIFY_EMAIL_CODE_NOT_FOUND = "Código de verificação não encontrado",
     USER_VERIFY_EMAIL_CODE_ALREADY_USED = "Código de verificação já foi usado",
+    USER_ADDRESS_NOT_FOUND = "Endereço do usuário não encontrado",
+    USER_CANNOT_DELETE_LAST_ADDRESS = "O usuário deve manter pelo menos um endereço",
 }

@@ -5,7 +5,7 @@ import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
 import { EUserException } from "@/errors/enums/user";
 import parseQueryParams from "@/utils/query-param";
-import { AddressCreateBody } from "@/schemas/address.schema";
+import { AddressCreateBody, AddressUpdateBody } from "@/schemas/address.schema";
 
 export default class UserController {
     private readonly service: UserService;
@@ -162,6 +162,72 @@ export default class UserController {
         res.status(200).json({
             message: "Endereço criado com sucesso",
             data: address,
+        });
+    }
+
+    setDefaultAddress = async (req: Request, res: Response) => {
+        const currentUserId = req.userId;
+        const userId = req.params.id as string;
+        const addressId = req.params.addressId as string;
+
+        if (userId !== currentUserId) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Você não tem permissão para alterar o endereço padrão de outro usuário",
+                [{ name: "userId", reason: "Você não tem permissão para alterar o endereço padrão de outro usuário" }]
+            );
+        }
+
+        const address = await this.service.setDefaultAddress(userId, addressId);
+
+        res.status(200).json({
+            message: "Endereço padrão atualizado com sucesso",
+            data: address,
+        });
+    }
+
+    updateAddress = async (req: Request, res: Response) => {
+        const currentUserId = req.userId;
+        const userId = req.params.id as string;
+        const addressId = req.params.addressId as string;
+        const addressUpdateDTO = req.body as AddressUpdateBody;
+
+        if (userId !== currentUserId) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Você não tem permissão para alterar endereços de outro usuário",
+                [{ name: "userId", reason: "Você não tem permissão para alterar endereços de outro usuário" }]
+            );
+        }
+
+        const address = await this.service.updateAddress(userId, addressId, addressUpdateDTO);
+
+        res.status(200).json({
+            message: "Endereço atualizado com sucesso",
+            data: address,
+        });
+    }
+
+    deleteAddress = async (req: Request, res: Response) => {
+        const currentUserId = req.userId;
+        const userId = req.params.id as string;
+        const addressId = req.params.addressId as string;
+
+        if (userId !== currentUserId) {
+            throw new CustomError(
+                EStatusCode.UNAUTHORIZED,
+                EUserException.USER_UNAUTHORIZED,
+                "Você não tem permissão para remover endereços de outro usuário",
+                [{ name: "userId", reason: "Você não tem permissão para remover endereços de outro usuário" }]
+            );
+        }
+
+        await this.service.deleteAddress(userId, addressId);
+
+        res.status(200).json({
+            message: "Endereço removido com sucesso",
         });
     }
 }
