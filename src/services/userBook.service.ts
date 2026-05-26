@@ -12,6 +12,8 @@ import { IQueryParams } from "@/shared/interfaces/query-param";
 import { buildPaginationMeta } from "@/shared/repository";
 import { IPaginated } from "@/shared/interfaces/paginated";
 
+const DEFAULT_USERBOOK_DESCRIPTION = "descricao nao informa pelo anunciante";
+
 export default class UserBookService {
     private readonly repository: UserBookRepository;
     private readonly userRepository: UserRepository;
@@ -56,6 +58,8 @@ export default class UserBookService {
     }
 
     createUserBook = async (body: UserBookCreateWithUserIdBody): Promise<UserBookWithInclude> => {
+        const normalizedDescription = (body.description ?? "").trim();
+        const resolvedDescription = normalizedDescription || DEFAULT_USERBOOK_DESCRIPTION;
         const user = await this.userRepository.findById(body.userId);
         if (!user) {
             throw new CustomError(
@@ -69,7 +73,7 @@ export default class UserBookService {
         const userBookCreateInput: UserBookCreateInput = {
             condition: body.condition,
             price: body.price,
-            description: body.description,
+            description: resolvedDescription,
             status: body.status,
             isPrivate: false,
             User: {
@@ -128,12 +132,19 @@ export default class UserBookService {
             );
         }
 
+        const normalizedDescription = body.description !== undefined
+            ? body.description.trim()
+            : undefined;
+        const resolvedDescription = normalizedDescription !== undefined
+            ? normalizedDescription || DEFAULT_USERBOOK_DESCRIPTION
+            : undefined;
+
         const userBookUpdateInput: UserBookUpdateInput = {
             ...(body.price !== undefined && {
                 price: body.price,
             }),
-            ...(body.description !== undefined && {
-                description: body.description,
+            ...(resolvedDescription !== undefined && {
+                description: resolvedDescription,
             }),
             ...(body.status !== undefined && {
                 status: body.status,
