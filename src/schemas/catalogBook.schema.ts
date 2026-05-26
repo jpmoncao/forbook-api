@@ -15,8 +15,7 @@ export const catalogBookCreateBodySchema = z.
             .max(255, "Deve conter no máximo 255 caracteres"),
         description: z.string("Descrição deve ser um texto")
             .trim()
-            .min(1, "Deve conter no mínimo 1 caracter")
-            .max(255, "Deve conter no máximo 255 caracteres"),
+            .min(1, "Deve conter no mínimo 1 caracter"),
         year: z.number("Ano deve ser um número")
             .min(1900, "Deve conter no mínimo 1900")
             .max(new Date().getFullYear(), "Deve conter no máximo o ano atual"),
@@ -31,8 +30,7 @@ export const catalogBookUpdateBodySchema = z.
     object({
         description: z.string("Descrição deve ser um texto")
             .trim()
-            .min(1, "Deve conter no mínimo 1 caracter")
-            .max(255, "Deve conter no máximo 255 caracteres").optional()
+            .min(1, "Deve conter no mínimo 1 caracter").optional()
     })
     .strict();
 
