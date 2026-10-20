@@ -1,3 +1,4 @@
+import prisma from "@/config/prisma";
 import type { UserCreateBody, UserUpdateBody } from "@/schemas/user.schema";
 import { AddressCreateInput, AddressUpdateInput, UserCreateInput, UserUpdateInput, UserWhereInput } from "@/generated/prisma/models"
 import UserRepository from "@/repositories/user.repository";
@@ -116,7 +117,7 @@ export default class UserService {
     }
 
     getMe = async (userId: string): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Addresses: true, Ratings: true });
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Addresses: true, Ratings: true, Institution: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -130,7 +131,7 @@ export default class UserService {
     }
 
     getUserById = async (userId: string): Promise<UserPublicWithInclude> => {
-        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Ratings: true });
+        const user = await this.repository.findByIdWithInclude(userId, { ProfileImage: true, Ratings: true, Institution: true });
         if (!user) {
             throw new CustomError(
                 EStatusCode.NOT_FOUND,
@@ -178,7 +179,14 @@ export default class UserService {
             }
         }
 
+        if (body.institutionId && !await prisma.institution.findUnique({ where: { id: body.institutionId } })) {
+            throw new CustomError(EStatusCode.NOT_FOUND, "INSTITUTION_NOT_FOUND", "Instituição não encontrada");
+        }
+
         const userUpdateInput: UserUpdateInput = {
+            ...(body.institutionId !== undefined && {
+                Institution: body.institutionId === null ? { disconnect: true } : { connect: { id: body.institutionId } },
+            }),
             ...(body.name !== undefined && { name: body.name }),
             ...(body.email !== undefined && { email: body.email }),
             ...(body.phoneNumber !== undefined && { phoneNumber: body.phoneNumber }),

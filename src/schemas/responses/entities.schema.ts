@@ -1,3 +1,4 @@
+import { institutionSchema } from "@/schemas/institution.schema";
 import { UserBookCondition, UserBookStatus } from "@/generated/prisma/enums";
 import { z } from "@/docs/zod-openapi";
 import { apiJsonListResponseSchema, apiJsonResponseSchema, messageResponseSchema } from "@/schemas/responses/common.schema";
@@ -55,6 +56,8 @@ export const userResponseSchema = z
         isReceiveTwoFactorAuthEmail: z.boolean(),
         createdAt: z.string().datetime(),
         updatedAt: z.string().datetime(),
+        institutionId: z.string().uuid().nullable(),
+        Institution: institutionSchema.nullable().optional(),
         averageRating: z.number().optional(),
         totalRatings: z.number().optional(),
         Addresses: z.array(addressResponseSchema).optional(),

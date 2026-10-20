@@ -23,6 +23,7 @@ export const userCreateBodySchema = z
 export const userUpdateBodySchema = z
     .object({
         email: z.email("Email inválido").optional(),
+        institutionId: z.string().uuid("Instituição inválida").nullable().optional(),
         phoneNumber: z
             .string("Telefone deve ser um texto")
             .trim()

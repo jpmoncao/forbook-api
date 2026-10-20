@@ -3,6 +3,7 @@ import UserBookService from "@/services/userBook.service";
 import type { UserBookCreateWithUserIdBody, UserBookUpdateWithUserIdBody } from "@/schemas/userBook.schema";
 import { UserBookStatus } from "@/generated/prisma/browser";
 import parseQueryParams from "@/utils/query-param";
+import { buildPublicBookQuery } from "@/utils/user-book-browse";
 
 export default class UserBookController {
     private readonly service: UserBookService;
@@ -53,53 +54,8 @@ export default class UserBookController {
     }
 
     getAllUserBooks = async (req: Request, res: Response) => {
-        const queryParams = parseQueryParams(req.query);
-
         const userId = req.userId as string;
-        const { term, filter } = queryParams.filter;
-        queryParams.filter = {
-            ...(term !== undefined && {
-                OR: [
-                    {
-                        CatalogBook: {
-                            title: {
-                                contains: queryParams.filter.term,
-                                mode: "insensitive"
-                            },
-                        },
-                    },
-                    {
-                        CatalogBook: {
-                            author: {
-                                contains: queryParams.filter.term,
-                                mode: "insensitive"
-                            },
-                        },
-                    },
-                    {
-                        CatalogBook: {
-                            publisher: {
-                                contains: queryParams.filter.term,
-                                mode: "insensitive"
-                            },
-                        },
-                    },
-                    {
-                        CatalogBook: {
-                            isbn: {
-                                contains: queryParams.filter.term,
-                            },
-                        },
-                    },
-                ]
-            }),
-            ...filter,
-            userId: {
-                not: userId,
-            },
-            status: UserBookStatus.ACTIVE,
-            isPrivate: false,
-        }
+        const queryParams = buildPublicBookQuery(req.query, userId);
 
         const { data: userBooks, meta } = await this.service.getAllUserBooks(queryParams, userId);
 

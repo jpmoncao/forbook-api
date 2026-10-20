@@ -53,6 +53,7 @@ export default class UserRepository extends AbstractRepository<
                 Addresses: true,
                 DefaultAddress: true,
                 Ratings: true,
+                Institution: true,
             },
         });
     }

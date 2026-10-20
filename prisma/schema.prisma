@@ -34,6 +34,8 @@ model User {
   isReceiveTwoFactorAuthEmail Boolean  @default(false)
   profileImageId              String?  @unique
   defaultAddressId            String?  @unique
+  institutionId               String?
+  Institution                 Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -50,6 +52,7 @@ model User {
   LoginAttempts      LoginAttempt[]      @relation("UserLoginAttempts")
   VerifyEmailAttempt VerifyEmailAttempt? @relation("UserVerifyEmailAttempt")
 
+  @@index([institutionId])
   @@map("users")
 }
 
@@ -265,4 +268,34 @@ enum TradeOfferStatus {
   ACCEPTED
   REJECTED
   CANCELLED
+}
+
+// One establishment/campus per OSM identity; names are deliberately not unique.
+model Institution {
+  id        String @id @default(uuid())
+  name      String
+  type      String
+  address   String?
+  city      String?
+  state     String?
+  latitude  Float
+  longitude Float
+  osmType   String
+  osmId     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Users     User[]
+  @@unique([osmType, osmId])
+  @@index([latitude, longitude])
+  @@index([name])
+  @@map("institutions")
+}
+
+// Shared across API instances; empty successful lookups are cached too.
+model InstitutionLookupCache {
+  key       String @id
+  payload   Json
+  expiresAt DateTime
+  @@index([expiresAt])
+  @@map("institution_lookup_cache")
 }
