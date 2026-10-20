@@ -1,3 +1,4 @@
+import { userBookBrowseQuerySchema } from "@/utils/user-book-browse";
 import UserBookController from "@/controllers/userBook.controller";
 import { createDocumentedRouter } from "@/docs/documented-router";
 import { userBookCreateBodySchema, userBookUpdateBodySchema } from "@/schemas/userBook.schema";
@@ -14,6 +15,7 @@ userBookRoutes.get(
     "/",
     {
         summary: "Listar anúncios de livros",
+        query: userBookBrowseQuerySchema,
         auth: true,
         responses: {
             200: userBooksListResponseSchema,

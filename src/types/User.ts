@@ -1,7 +1,8 @@
-import type { Address, Image, Rating, User } from "@/generated/prisma/client";
+import type { Address, Image, Rating, User, Institution } from "@/generated/prisma/client";
 
 export type UserWithInclude = User & {
     ProfileImage?: Image | null;
+    Institution?: Institution | null;
     Addresses?: Address[];
     DefaultAddress?: Address | null;
     Ratings?: Rating[];

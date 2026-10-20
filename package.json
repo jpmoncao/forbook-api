@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "DATABASE_URL=${DATABASE_URL:-postgresql://forbook:forbook@127.0.0.1:5432/forbook_test} tsx --test tests/*.test.ts",
     "start": "node dist/src/app.js",
     "build": "tsc && tsc-alias -p tsconfig.json",
     "dev": "tsx watch src/app.ts",

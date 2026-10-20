@@ -8,7 +8,6 @@ export function validateBody<T>(schema: ZodSchema<T>) {
         const result = schema.safeParse(req.body);
 
         if (!result.success) {
-            console.log(result.error);
 
             res.status(EStatusCode.UNPROCESSABLE_ENTITY).json({
                 message: EGenericException.INVALID_BODY,
