@@ -3,7 +3,8 @@ import prisma from "@/config/prisma";
 import type { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { CustomError } from "@/errors/custom-error";
 import { EStatusCode } from "@/errors/enums/status-code";
-import { distanceMeters, nearbyCell, normalizeElements, toInstitutionDTO, validCoordinates } from "@/utils/institutions";
+import OverpassProvider, { type OverpassOptions } from "@/services/overpass.provider";
+import { distanceMeters, nearbyCell, toInstitutionDTO, validCoordinates } from "@/utils/institutions";
 
 export const INSTITUTION_ATTRIBUTION = "© OpenStreetMap contributors (https://www.openstreetmap.org/copyright)";
 let nextCacheCleanup = 0;
@@ -34,7 +35,10 @@ async function coalesce<T>(key: string, run: () => Promise<T>): Promise<T> {
     inflight.set(key, pending); return pending;
 }
 export default class InstitutionService {
-    constructor(private readonly db: PrismaClient = prisma, private readonly fetcher: typeof fetch = fetch) {}
+    private readonly overpass: OverpassProvider;
+    constructor(private readonly db: PrismaClient = prisma, private readonly fetcher: typeof fetch = fetch, options: OverpassOptions = {}) {
+        this.overpass = new OverpassProvider(fetcher, options);
+    }
 
     private async request(url: string, options: RequestInit, provider: string): Promise<unknown> {
         return queued(provider, async () => {
@@ -94,28 +98,43 @@ export default class InstitutionService {
         let partial = false;
         try {
             await coalesce(cell.key, async () => {
-                if (await this.cached(cell.key) !== null) {
-                    console.info(JSON.stringify({ event: "institution_cache", provider: "overpass", hit: true }));
-                    return;
+                let stage = "cache_read";
+                try {
+                    if (await this.cached(cell.key) !== null) {
+                        console.info(JSON.stringify({ event: "institution_cache", provider: "overpass", hit: true }));
+                        return;
+                    }
+                    console.info(JSON.stringify({ event: "institution_cache", provider: "overpass", hit: false }));
+                    stage = "provider";
+                    const records = await this.overpass.discover(cell.latitude, cell.longitude, cell.radius);
+                    stage = "catalog_write";
+                    await this.db.$transaction(records.map(record => this.db.institution.upsert({
+                        where: { osmType_osmId: { osmType: record.osmType, osmId: record.osmId } }, create: record, update: record,
+                    })));
+                    stage = "cache_write";
+                    await this.cache(cell.key, { complete: true });
+                } catch {
+                    if (stage !== "provider") console.warn(JSON.stringify({ event: "institution_storage", stage, reason: "storage_failure", success: false }));
+                    throw new Error(stage === "provider" ? "provider_failure" : "storage_failure");
                 }
-                console.info(JSON.stringify({ event: "institution_cache", provider: "overpass", hit: false }));
-                const query = `[out:json][timeout:25];nwr["amenity"~"^(school|university|college)$"](around:${cell.radius},${cell.latitude},${cell.longitude});out center tags;`;
-                const payload = await this.request(process.env.OVERPASS_URL || "https://overpass.private.coffee/api/interpreter", {
-                    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ data: query }).toString(),
-                }, "overpass") as { elements?: unknown; remark?: unknown };
-                // Overpass sometimes returns 200 with partial elements and an error remark.
-                if (payload?.remark) throw new Error("Partial Overpass response");
-                const records = normalizeElements(payload?.elements);
-                await this.db.$transaction(records.map(record => this.db.institution.upsert({
-                    where: { osmType_osmId: { osmType: record.osmType, osmId: record.osmId } }, create: record, update: record,
-                })));
-                await this.cache(cell.key, { complete: true });
             });
-        } catch { partial = true; }
+        } catch (error) {
+            if (error instanceof Error && error.message === "storage_failure") {
+                throw new CustomError(EStatusCode.INTERNAL_SERVER_ERROR, "INSTITUTION_STORAGE_UNAVAILABLE", "Não foi possível consultar ou salvar as instituições. Tente novamente em instantes.");
+            }
+            partial = true;
+        }
         const latitudeDelta = radius / 110000;
-        const rows = await this.db.institution.findMany({ where: { latitude: { gte: Math.max(-90, lat - latitudeDelta), lte: Math.min(90, lat + latitudeDelta) } } });
+        let rows;
+        try {
+            rows = await this.db.institution.findMany({ where: { latitude: { gte: Math.max(-90, lat - latitudeDelta), lte: Math.min(90, lat + latitudeDelta) } } });
+        } catch {
+            console.warn(JSON.stringify({ event: "institution_storage", stage: "catalog_read", reason: "storage_failure", success: false }));
+            throw new CustomError(EStatusCode.INTERNAL_SERVER_ERROR, "INSTITUTION_STORAGE_UNAVAILABLE", "Não foi possível consultar as instituições. Tente novamente em instantes.");
+        }
         const data = rows.map(row => ({ ...toInstitutionDTO({ ...row, type: row.type as "school" | "university" | "college" }), distanceMeters: distanceMeters(lat, lng, row.latitude, row.longitude) }))
             .filter(row => row.distanceMeters <= radius).sort((a, b) => a.distanceMeters - b.distanceMeters || a.name.localeCompare(b.name));
+        if (partial && data.length === 0) throw new CustomError(EStatusCode.SERVICE_UNAVAILABLE, "INSTITUTION_DISCOVERY_UNAVAILABLE", "A busca de instituições está temporariamente indisponível. Tente novamente em instantes.");
         return { data, meta: { partial, attribution: INSTITUTION_ATTRIBUTION } };
     }
     async geocode(query: string) {

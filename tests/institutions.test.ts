@@ -4,7 +4,11 @@ import { distanceMeters, nearbyCell, normalizeElements } from "../src/utils/inst
 import { nearbyQuerySchema, parseInput } from "../src/schemas/institution.schema";
 import { userUpdateBodySchema } from "../src/schemas/user.schema";
 import { buildPublicBookQuery } from "../src/utils/user-book-browse";
-import InstitutionService from "../src/services/institution.service";
+import RealInstitutionService from "../src/services/institution.service";
+let testEndpoint = 0;
+class InstitutionService extends RealInstitutionService {
+    constructor(db: any, fetcher: typeof fetch) { super(db, fetcher, { endpoints: [`https://isolated-${++testEndpoint}.example.test/interpreter`] }); }
+}
 
 const fixture = [
     { type: "node", id: 1, lat: -23.55, lon: -46.63, tags: { name: "Escola A", amenity: "school", "addr:city": "São Paulo" } },
@@ -99,7 +103,7 @@ test("explicit geocode normalizes cache key and does not persist address query",
 test("HTTP 429 activates backoff and prevents repeated upstream calls", async () => {
     const { db } = fakeDatabase(); let calls = 0;
     const service = new InstitutionService(db, (async () => { calls++; return new Response("", { status: 429, headers: { "Retry-After": "60" } }); }) as typeof fetch);
-    const first = await service.nearby(40, 40, 3000);
-    const next = await service.nearby(41, 41, 3000);
-    assert.equal(first.meta.partial, true); assert.equal(next.meta.partial, true); assert.equal(calls, 1);
+    await assert.rejects(service.nearby(40, 40, 3000), (error: any) => error.statusCode === 503 && error.title === "INSTITUTION_DISCOVERY_UNAVAILABLE");
+    await assert.rejects(service.nearby(41, 41, 3000), (error: any) => error.statusCode === 503);
+    assert.equal(calls, 1);
 });

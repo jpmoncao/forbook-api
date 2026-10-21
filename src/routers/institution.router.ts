@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { errorResponseSchema } from "@/schemas/responses/common.schema";
 import { z } from "@/docs/zod-openapi";
 import { createDocumentedRouter } from "@/docs/documented-router";
 import { geocodeBodySchema, geocodeCandidateSchema, institutionListQuerySchema, institutionParamsSchema, institutionSchema, nearbyQuerySchema, parseInput } from "@/schemas/institution.schema";
@@ -22,7 +23,7 @@ routes.get("/", { summary: "Buscar instituições no catálogo", auth: true, que
     const result = await service.list(parseInput(institutionListQuerySchema, req.query));
     res.json({ message: "Instituições encontradas", ...result });
 });
-routes.get("/nearby", { summary: "Buscar instituições próximas", auth: true, query: nearbyQuerySchema, responses: { 200: envelope(z.array(institutionSchema.extend({ distanceMeters: z.number() }))) } }, throttle, async (req, res) => {
+routes.get("/nearby", { summary: "Buscar instituições próximas", auth: true, query: nearbyQuerySchema, responses: { 200: envelope(z.array(institutionSchema.extend({ distanceMeters: z.number() }))), 500: { description: "Falha ao consultar ou persistir instituições", schema: errorResponseSchema }, 503: { description: "Provedores indisponíveis e sem instituições catalogadas no raio", schema: errorResponseSchema } } }, throttle, async (req, res) => {
     const query = parseInput(nearbyQuerySchema, req.query);
     res.json({ message: "Instituições próximas encontradas", ...await service.nearby(query.lat, query.lng, query.radius) });
 });
